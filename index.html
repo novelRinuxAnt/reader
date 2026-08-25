@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+
+    <meta name="theme-color" content="#111111">
+
+    <title>Novel Reader</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- =========================
+         HEADER
+    ========================== -->
+    <header class="reader-header">
+
+        <div class="header-left">
+            <button
+                id="backButton"
+                class="icon-button"
+                aria-label="Kembali"
+                title="Kembali"
+            >
+                ←
+            </button>
+
+            <div class="book-info">
+                <div id="bookTitle" class="book-title">
+                    Novel Reader
+                </div>
+
+                <div id="chapterTitle" class="chapter-title">
+                    Chapter 1
+                </div>
+            </div>
+        </div>
+
+        <div class="header-right">
+
+            <button
+                id="fullscreenButton"
+                class="icon-button"
+                aria-label="Fullscreen"
+                title="Fullscreen"
+            >
+                ⛶
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =========================
+         READER
+    ========================== -->
+    <main class="reader">
+
+        <div
+            id="readerViewport"
+            class="reader-viewport"
+        >
+
+            <div
+                id="loading"
+                class="loading"
+            >
+                <div class="loading-spinner"></div>
+                <div>Memuat halaman...</div>
+            </div>
+
+
+            <div
+                id="errorMessage"
+                class="error-message hidden"
+            >
+                <div class="error-icon">
+                    ⚠
+                </div>
+
+                <div class="error-title">
+                    Halaman tidak dapat dimuat
+                </div>
+
+                <div
+                    id="errorText"
+                    class="error-text"
+                >
+                    Periksa koneksi internet.
+                </div>
+
+                <button
+                    id="retryButton"
+                    class="retry-button"
+                >
+                    Coba Lagi
+                </button>
+            </div>
+
+
+            <img
+                id="readerImage"
+                class="reader-image"
+                alt="Halaman novel"
+                draggable="false"
+            >
+
+        </div>
+
+    </main>
+
+
+    <!-- =========================
+         BOTTOM CONTROL
+    ========================== -->
+    <section class="reader-controls">
+
+        <button
+            id="previousButton"
+            class="page-button"
+            aria-label="Halaman sebelumnya"
+        >
+            ‹
+        </button>
+
+
+        <div class="page-information">
+
+            <div
+                id="pageNumber"
+                class="page-number"
+            >
+                1 / 1
+            </div>
+
+            <div
+                id="progressBar"
+                class="progress-bar"
+            >
+                <div
+                    id="progress"
+                    class="progress"
+                ></div>
+            </div>
+
+        </div>
+
+
+        <button
+            id="nextButton"
+            class="page-button"
+            aria-label="Halaman berikutnya"
+        >
+            ›
+        </button>
+
+    </section>
+
+
+    <!-- =========================
+         THUMBNAILS
+    ========================== -->
+    <section class="thumbnail-section">
+
+        <div
+            id="thumbnailContainer"
+            class="thumbnail-container"
+        >
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         JAVASCRIPT
+    ========================== -->
+    <script src="script.js"></script>
+
+</body>
+</html>
