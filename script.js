@@ -1,103 +1,58 @@
-/* =========================================================
-   NOVEL RINUXANT - WEBP READER V1
-========================================================= */
+"use strict";
 
 
-/* =========================================================
-   KONFIGURASI NOVEL
-========================================================= */
+/* =========================================
+   GOOGLE APPS SCRIPT API
+========================================= */
 
-const READER_CONFIG = {
-
-    title: "Novel Reader",
-
-    chapter: "Chapter 1",
-
-    /*
-     * Daftar halaman WebP.
-     *
-     * Untuk sementara gunakan URL WebP langsung.
-     *
-     * CONTOH:
-     *
-     * "https://alamat-server/001.webp"
-     *
-     */
-
-    pages: [
-
-        /*
-        "https://alamat-server/001.webp",
-        "https://alamat-server/002.webp",
-        "https://alamat-server/003.webp",
-        "https://alamat-server/004.webp"
-        */
-
-    ]
-
-};
+const API_URL =
+    "https://script.google.com/macros/s/AKfycbyIXvAoxY7Vmh3Rb8HdgF2CtIqm97eCoezRp1t5ql53fmotUEl6G-l-txRhoGDtskcsLg/exec";
 
 
-/* =========================================================
-   STATE
-========================================================= */
-
-let currentPage = 0;
-
-
-/* =========================================================
+/* =========================================
    ELEMENT
-========================================================= */
+========================================= */
 
-const readerImage =
-    document.getElementById("readerImage");
-
-const readerViewport =
-    document.getElementById("readerViewport");
+const pagesContainer =
+    document.getElementById("pages");
 
 const loading =
     document.getElementById("loading");
 
+const errorBox =
+    document.getElementById("errorBox");
+
 const errorMessage =
     document.getElementById("errorMessage");
-
-const errorText =
-    document.getElementById("errorText");
 
 const retryButton =
     document.getElementById("retryButton");
 
-const previousButton =
-    document.getElementById("previousButton");
-
-const nextButton =
-    document.getElementById("nextButton");
-
-const pageNumber =
-    document.getElementById("pageNumber");
-
-const progress =
-    document.getElementById("progress");
-
-const thumbnailContainer =
-    document.getElementById("thumbnailContainer");
-
-const bookTitle =
-    document.getElementById("bookTitle");
-
-const chapterTitle =
-    document.getElementById("chapterTitle");
-
 const backButton =
     document.getElementById("backButton");
 
-const fullscreenButton =
-    document.getElementById("fullscreenButton");
+const logoutButton =
+    document.getElementById("logoutButton");
+
+const readerStatus =
+    document.getElementById("readerStatus");
+
+const pageCounter =
+    document.getElementById("pageCounter");
 
 
-/* =========================================================
-   INITIALIZATION
-========================================================= */
+/* =========================================
+   DATA
+========================================= */
+
+let readerData = null;
+
+let pages = [];
+
+
+/* =========================================
+   START
+========================================= */
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -105,517 +60,446 @@ document.addEventListener(
 );
 
 
+/* =========================================
+   INITIALIZE
+========================================= */
+
 function initializeReader() {
 
-    bookTitle.textContent =
-        READER_CONFIG.title;
-
-    chapterTitle.textContent =
-        READER_CONFIG.chapter;
+    const savedData =
+        localStorage.getItem("novelReaderData");
 
 
-    createThumbnails();
+    /*
+     * Jika login menyimpan data
+     * dengan nama novelReaderData
+     */
 
-    updateControls();
+    if (savedData) {
 
+        try {
 
-    if (READER_CONFIG.pages.length === 0) {
+            readerData =
+                JSON.parse(savedData);
 
-        showEmptyReader();
+            loadReaderFromSavedData();
 
-        return;
+            return;
+
+        } catch (error) {
+
+            console.error(
+                "Data Reader rusak:",
+                error
+            );
+
+        }
+
     }
 
 
-    loadPage(0);
+    /*
+     * Jika belum ada data login,
+     * kita tampilkan error.
+     */
+
+    showError(
+        "Data login tidak ditemukan. Silakan login terlebih dahulu."
+    );
+
 }
 
 
-/* =========================================================
-   LOAD PAGE
-========================================================= */
+/* =========================================
+   LOAD SAVED DATA
+========================================= */
 
-function loadPage(index) {
+function loadReaderFromSavedData() {
 
-    if (
-        index < 0 ||
-        index >= READER_CONFIG.pages.length
-    ) {
-        return;
-    }
-
-
-    currentPage = index;
-
-
-    hideError();
-
-    showLoading();
-
-
-    readerImage.classList.add("hidden");
-
-
-    const imageURL =
-        READER_CONFIG.pages[index];
-
-
-    const preload =
-        new Image();
-
-
-    preload.onload = function () {
-
-        readerImage.src =
-            imageURL;
-
-        readerImage.alt =
-            `Halaman ${index + 1}`;
-
-        readerImage.classList.remove(
-            "hidden"
-        );
-
-
-        hideLoading();
-
-
-        updateControls();
-
-        updateThumbnails();
-
-    };
-
-
-    preload.onerror = function () {
-
-        hideLoading();
+    if (!readerData) {
 
         showError(
-            "Halaman WebP tidak dapat dimuat."
+            "Data Reader tidak tersedia."
         );
-
-    };
-
-
-    preload.src =
-        imageURL;
-}
-
-
-/* =========================================================
-   NEXT PAGE
-========================================================= */
-
-function nextPage() {
-
-    if (
-        currentPage <
-        READER_CONFIG.pages.length - 1
-    ) {
-
-        loadPage(
-            currentPage + 1
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   PREVIOUS PAGE
-========================================================= */
-
-function previousPage() {
-
-    if (currentPage > 0) {
-
-        loadPage(
-            currentPage - 1
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   CONTROLS
-========================================================= */
-
-function updateControls() {
-
-    const total =
-        READER_CONFIG.pages.length;
-
-
-    if (total === 0) {
-
-        pageNumber.textContent =
-            "0 / 0";
-
-        progress.style.width =
-            "0%";
-
-        previousButton.disabled =
-            true;
-
-        nextButton.disabled =
-            true;
 
         return;
+
     }
 
 
-    pageNumber.textContent =
-        `${currentPage + 1} / ${total}`;
+    /*
+     * API Anda memiliki:
+     *
+     * success
+     * username
+     * folder
+     * total
+     * files
+     */
+
+    if (readerData.success !== true) {
+
+        showError(
+            "Login tidak berhasil."
+        );
+
+        return;
+
+    }
 
 
-    const percentage =
-        ((currentPage + 1) / total) * 100;
+    if (
+        !Array.isArray(
+            readerData.files
+        )
+    ) {
+
+        showError(
+            "Daftar WebP tidak ditemukan."
+        );
+
+        return;
+
+    }
 
 
-    progress.style.width =
-        `${percentage}%`;
-
-
-    previousButton.disabled =
-        currentPage === 0;
-
-
-    nextButton.disabled =
-        currentPage === total - 1;
-}
-
-
-/* =========================================================
-   THUMBNAILS
-========================================================= */
-
-function createThumbnails() {
-
-    thumbnailContainer.innerHTML =
-        "";
-
-
-    READER_CONFIG.pages.forEach(
-        (pageURL, index) => {
-
-            const thumbnail =
-                document.createElement("button");
-
-
-            thumbnail.className =
-                "thumbnail";
-
-
-            thumbnail.type =
-                "button";
-
-
-            thumbnail.setAttribute(
-                "aria-label",
-                `Halaman ${index + 1}`
-            );
-
-
-            const image =
-                document.createElement("img");
-
-
-            image.src =
-                pageURL;
-
-
-            image.alt =
-                `Thumbnail halaman ${index + 1}`;
-
-
-            image.loading =
-                "lazy";
-
-
-            thumbnail.appendChild(
-                image
-            );
-
-
-            thumbnail.addEventListener(
-                "click",
-                () => {
-
-                    loadPage(index);
-
-                }
-            );
-
-
-            thumbnailContainer.appendChild(
-                thumbnail
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   UPDATE THUMBNAILS
-========================================================= */
-
-function updateThumbnails() {
-
-    const thumbnails =
-        document.querySelectorAll(
-            ".thumbnail"
+    pages =
+        sortPages(
+            readerData.files
         );
 
 
-    thumbnails.forEach(
-        (thumbnail, index) => {
+    if (pages.length === 0) {
 
-            thumbnail.classList.toggle(
-                "active",
-                index === currentPage
-            );
+        showError(
+            "Tidak ada halaman WebP."
+        );
+
+        return;
+
+    }
+
+
+    updateHeader();
+
+    renderPages();
+
+}
+
+
+/* =========================================
+   SORT PAGE
+========================================= */
+
+function sortPages(files) {
+
+    return [...files].sort(
+        function(a, b) {
+
+            const numberA =
+                getPageNumber(a.name);
+
+            const numberB =
+                getPageNumber(b.name);
+
+            return numberA - numberB;
 
         }
     );
 
-
-    const activeThumbnail =
-        thumbnails[currentPage];
+}
 
 
-    if (activeThumbnail) {
+/* =========================================
+   GET PAGE NUMBER
+========================================= */
 
-        activeThumbnail.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest",
-            inline: "center"
-        });
+function getPageNumber(filename) {
 
+    if (!filename) {
+        return 0;
     }
 
-}
+
+    /*
+     * Contoh:
+     *
+     * page-0256.webp
+     *
+     * hasil:
+     *
+     * 256
+     */
+
+    const match =
+        filename.match(
+            /(\d+)(?=\.[^.]+$)/
+        );
 
 
-/* =========================================================
-   LOADING
-========================================================= */
+    if (!match) {
+        return 0;
+    }
 
-function showLoading() {
 
-    loading.classList.remove(
-        "hidden"
+    return parseInt(
+        match[1],
+        10
     );
 
 }
 
 
-function hideLoading() {
+/* =========================================
+   HEADER
+========================================= */
 
-    loading.classList.add(
-        "hidden"
-    );
+function updateHeader() {
 
-}
-
-
-/* =========================================================
-   ERROR
-========================================================= */
-
-function showError(message) {
-
-    errorText.textContent =
-        message;
+    const username =
+        readerData.username || "";
 
 
-    errorMessage.classList.remove(
-        "hidden"
-    );
+    readerStatus.textContent =
+        username
+            ? "Pembaca: " + username
+            : pages.length + " halaman";
+
+
+    pageCounter.textContent =
+        "1 / " + pages.length;
 
 }
 
 
-function hideError() {
+/* =========================================
+   RENDER PAGES
+========================================= */
 
-    errorMessage.classList.add(
-        "hidden"
-    );
-
-}
-
-
-/* =========================================================
-   EMPTY READER
-========================================================= */
-
-function showEmptyReader() {
+function renderPages() {
 
     hideLoading();
 
-    readerImage.classList.add(
-        "hidden"
+    hideError();
+
+
+    pagesContainer.innerHTML = "";
+
+
+    pages.forEach(
+        function(file, index) {
+
+            createPage(
+                file,
+                index
+            );
+
+        }
     );
 
 
-    showError(
-        "Belum ada halaman WebP yang ditambahkan."
+    updatePageCounter();
+
+}
+
+
+/* =========================================
+   CREATE PAGE
+========================================= */
+
+function createPage(
+    file,
+    index
+) {
+
+    const page =
+        document.createElement("div");
+
+
+    page.className =
+        "page";
+
+
+    page.dataset.page =
+        index + 1;
+
+
+    const img =
+        document.createElement("img");
+
+
+    /*
+     * API sudah memberikan URL:
+     *
+     * https://drive.google.com/uc?export=view&id=...
+     */
+
+    img.src =
+        file.url;
+
+
+    img.alt =
+        file.name ||
+        "Halaman " + (index + 1);
+
+
+    img.loading =
+        index < 3
+            ? "eager"
+            : "lazy";
+
+
+    img.decoding =
+        "async";
+
+
+    /*
+     * Jika gambar gagal,
+     * tampilkan pesan sederhana.
+     */
+
+    img.onerror =
+        function() {
+
+            img.style.display =
+                "none";
+
+
+            const error =
+                document.createElement(
+                    "div"
+                );
+
+
+            error.style.padding =
+                "40px 20px";
+
+
+            error.style.color =
+                "#aaa";
+
+
+            error.textContent =
+                "Gagal memuat " +
+                file.name;
+
+
+            page.appendChild(
+                error
+            );
+
+        };
+
+
+    page.appendChild(img);
+
+
+    pagesContainer.appendChild(
+        page
     );
 
 }
 
 
-/* =========================================================
-   RETRY
-========================================================= */
+/* =========================================
+   PAGE COUNTER
+========================================= */
 
-retryButton.addEventListener(
-    "click",
-    () => {
+function updatePageCounter() {
 
-        loadPage(currentPage);
-
+    if (!pages.length) {
+        return;
     }
-);
 
 
-/* =========================================================
-   BUTTON NEXT
-========================================================= */
-
-nextButton.addEventListener(
-    "click",
-    nextPage
-);
+    const pageElements =
+        document.querySelectorAll(
+            ".page"
+        );
 
 
-/* =========================================================
-   BUTTON PREVIOUS
-========================================================= */
-
-previousButton.addEventListener(
-    "click",
-    previousPage
-);
+    const viewportCenter =
+        window.innerHeight / 2;
 
 
-/* =========================================================
-   KEYBOARD
-========================================================= */
+    let currentPage =
+        1;
 
-document.addEventListener(
-    "keydown",
-    (event) => {
 
-        if (event.key === "ArrowRight") {
+    let smallestDistance =
+        Infinity;
 
-            nextPage();
+
+    pageElements.forEach(
+        function(page, index) {
+
+            const rect =
+                page.getBoundingClientRect();
+
+
+            const pageCenter =
+                rect.top +
+                rect.height / 2;
+
+
+            const distance =
+                Math.abs(
+                    pageCenter -
+                    viewportCenter
+                );
+
+
+            if (
+                distance <
+                smallestDistance
+            ) {
+
+                smallestDistance =
+                    distance;
+
+                currentPage =
+                    index + 1;
+
+            }
 
         }
+    );
 
 
-        if (event.key === "ArrowLeft") {
+    pageCounter.textContent =
+        currentPage +
+        " / " +
+        pages.length;
 
-            previousPage();
-
-        }
-
-    }
-);
+}
 
 
-/* =========================================================
-   TOUCH / SWIPE
-========================================================= */
+/* =========================================
+   SCROLL
+========================================= */
 
-let touchStartX = 0;
-let touchStartY = 0;
-
-
-readerViewport.addEventListener(
-    "touchstart",
-    (event) => {
-
-        const touch =
-            event.changedTouches[0];
+let scrollTimer = null;
 
 
-        touchStartX =
-            touch.screenX;
+window.addEventListener(
+    "scroll",
+    function() {
 
-        touchStartY =
-            touch.screenY;
-
-    },
-    {
-        passive: true
-    }
-);
-
-
-readerViewport.addEventListener(
-    "touchend",
-    (event) => {
-
-        const touch =
-            event.changedTouches[0];
-
-
-        const touchEndX =
-            touch.screenX;
-
-        const touchEndY =
-            touch.screenY;
-
-
-        const differenceX =
-            touchEndX - touchStartX;
-
-
-        const differenceY =
-            touchEndY - touchStartY;
-
-
-        /*
-         * Abaikan jika gerakan lebih banyak
-         * vertikal daripada horizontal.
-         */
-
-        if (
-            Math.abs(differenceX) <
-            Math.abs(differenceY)
-        ) {
+        if (scrollTimer) {
             return;
         }
 
 
-        const minimumSwipe =
-            50;
+        scrollTimer =
+            requestAnimationFrame(
+                function() {
 
+                    updatePageCounter();
 
-        if (
-            differenceX <
-            -minimumSwipe
-        ) {
+                    scrollTimer = null;
 
-            nextPage();
-
-        }
-
-
-        if (
-            differenceX >
-            minimumSwipe
-        ) {
-
-            previousPage();
-
-        }
+                }
+            );
 
     },
     {
@@ -624,87 +508,13 @@ readerViewport.addEventListener(
 );
 
 
-/* =========================================================
-   FULLSCREEN
-========================================================= */
-
-fullscreenButton.addEventListener(
-    "click",
-    toggleFullscreen
-);
-
-
-async function toggleFullscreen() {
-
-    try {
-
-        if (!document.fullscreenElement) {
-
-            await document.documentElement
-                .requestFullscreen();
-
-            document.body.classList.add(
-                "fullscreen-mode"
-            );
-
-        } else {
-
-            await document.exitFullscreen();
-
-            document.body.classList.remove(
-                "fullscreen-mode"
-            );
-
-        }
-
-    } catch (error) {
-
-        /*
-         * Beberapa browser/mobile browser
-         * mungkin tidak mendukung fullscreen.
-         */
-
-        document.body.classList.toggle(
-            "fullscreen-mode"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   FULLSCREEN CHANGE
-========================================================= */
-
-document.addEventListener(
-    "fullscreenchange",
-    () => {
-
-        const fullscreen =
-            !!document.fullscreenElement;
-
-
-        document.body.classList.toggle(
-            "fullscreen-mode",
-            fullscreen
-        );
-
-    }
-);
-
-
-/* =========================================================
-   BACK BUTTON
-========================================================= */
+/* =========================================
+   BACK
+========================================= */
 
 backButton.addEventListener(
     "click",
-    () => {
-
-        /*
-         * Untuk V1 kita kembali ke halaman login.
-         */
+    function() {
 
         window.location.href =
             "https://novelrinuxant.github.io/login/";
@@ -713,15 +523,85 @@ backButton.addEventListener(
 );
 
 
-/* =========================================================
-   PREVENT IMAGE CONTEXT MENU
-========================================================= */
+/* =========================================
+   LOGOUT
+========================================= */
 
-readerImage.addEventListener(
-    "contextmenu",
-    (event) => {
+logoutButton.addEventListener(
+    "click",
+    function() {
 
-        event.preventDefault();
+        localStorage.removeItem(
+            "novelReaderData"
+        );
+
+
+        /*
+         * Jika nanti ada token,
+         * bisa dihapus di sini.
+         */
+
+
+        window.location.href =
+            "https://novelrinuxant.github.io/login/";
 
     }
 );
+
+
+/* =========================================
+   RETRY
+========================================= */
+
+retryButton.addEventListener(
+    "click",
+    function() {
+
+        initializeReader();
+
+    }
+);
+
+
+/* =========================================
+   LOADING
+========================================= */
+
+function hideLoading() {
+
+    loading.style.display =
+        "none";
+
+}
+
+
+/* =========================================
+   ERROR
+========================================= */
+
+function showError(message) {
+
+    loading.style.display =
+        "none";
+
+
+    pagesContainer.innerHTML =
+        "";
+
+
+    errorMessage.textContent =
+        message;
+
+
+    errorBox.hidden =
+        false;
+
+}
+
+
+function hideError() {
+
+    errorBox.hidden =
+        true;
+
+}
