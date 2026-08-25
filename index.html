@@ -2,13 +2,8 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    >
-
-    <meta name="theme-color" content="#111111">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
     <title>Novel Reader</title>
 
@@ -17,171 +12,81 @@
 
 <body>
 
-    <!-- =========================
-         HEADER
-    ========================== -->
     <header class="reader-header">
 
         <div class="header-left">
-            <button
-                id="backButton"
-                class="icon-button"
-                aria-label="Kembali"
-                title="Kembali"
-            >
+            <button id="backButton" class="header-button">
                 ←
             </button>
 
-            <div class="book-info">
-                <div id="bookTitle" class="book-title">
-                    Novel Reader
+            <div>
+                <div class="brand">
+                    Novel RinuxAnt
                 </div>
 
-                <div id="chapterTitle" class="chapter-title">
-                    Chapter 1
+                <div id="readerStatus">
+                    Memuat novel...
                 </div>
             </div>
         </div>
 
-        <div class="header-right">
-
-            <button
-                id="fullscreenButton"
-                class="icon-button"
-                aria-label="Fullscreen"
-                title="Fullscreen"
-            >
-                ⛶
-            </button>
-
-        </div>
+        <button id="logoutButton"
+                class="header-button logout-button">
+            Keluar
+        </button>
 
     </header>
 
 
-    <!-- =========================
-         READER
-    ========================== -->
-    <main class="reader">
+    <main id="reader">
 
-        <div
-            id="readerViewport"
-            class="reader-viewport"
-        >
+        <div id="loading" class="loading">
 
-            <div
-                id="loading"
-                class="loading"
-            >
-                <div class="loading-spinner"></div>
-                <div>Memuat halaman...</div>
+            <div class="loading-spinner"></div>
+
+            <div>
+                Memuat halaman...
             </div>
 
+        </div>
 
-            <div
-                id="errorMessage"
-                class="error-message hidden"
-            >
-                <div class="error-icon">
-                    ⚠
-                </div>
 
-                <div class="error-title">
-                    Halaman tidak dapat dimuat
-                </div>
+        <div id="errorBox"
+             class="error-box"
+             hidden>
 
-                <div
-                    id="errorText"
-                    class="error-text"
-                >
-                    Periksa koneksi internet.
-                </div>
-
-                <button
-                    id="retryButton"
-                    class="retry-button"
-                >
-                    Coba Lagi
-                </button>
+            <div class="error-title">
+                Gagal memuat Reader
             </div>
 
+            <div id="errorMessage">
+                Terjadi kesalahan.
+            </div>
 
-            <img
-                id="readerImage"
-                class="reader-image"
-                alt="Halaman novel"
-                draggable="false"
-            >
+            <button id="retryButton"
+                    class="retry-button">
+                Coba Lagi
+            </button>
 
+        </div>
+
+
+        <div id="pages"
+             class="pages">
         </div>
 
     </main>
 
 
-    <!-- =========================
-         BOTTOM CONTROL
-    ========================== -->
-    <section class="reader-controls">
+    <footer class="reader-footer">
 
-        <button
-            id="previousButton"
-            class="page-button"
-            aria-label="Halaman sebelumnya"
-        >
-            ‹
-        </button>
+        <span id="pageCounter">
+            0 / 0
+        </span>
+
+    </footer>
 
 
-        <div class="page-information">
-
-            <div
-                id="pageNumber"
-                class="page-number"
-            >
-                1 / 1
-            </div>
-
-            <div
-                id="progressBar"
-                class="progress-bar"
-            >
-                <div
-                    id="progress"
-                    class="progress"
-                ></div>
-            </div>
-
-        </div>
-
-
-        <button
-            id="nextButton"
-            class="page-button"
-            aria-label="Halaman berikutnya"
-        >
-            ›
-        </button>
-
-    </section>
-
-
-    <!-- =========================
-         THUMBNAILS
-    ========================== -->
-    <section class="thumbnail-section">
-
-        <div
-            id="thumbnailContainer"
-            class="thumbnail-container"
-        >
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         JAVASCRIPT
-    ========================== -->
     <script src="script.js"></script>
 
 </body>
