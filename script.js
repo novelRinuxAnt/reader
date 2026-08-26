@@ -186,20 +186,11 @@ function initializeReader() {
 
 function getStoredSession() {
 
-    /*
-     * Coba localStorage terlebih dahulu.
-     */
-
     let saved =
         localStorage.getItem(
             "novelReaderSession"
         );
 
-
-    /*
-     * Jika tidak ada,
-     * coba sessionStorage.
-     */
 
     if (!saved) {
 
@@ -211,9 +202,25 @@ function getStoredSession() {
     }
 
 
-    /*
-     * Tidak ada session.
-     */
+    if (!saved) {
+
+        saved =
+            localStorage.getItem(
+                "novelReaderData"
+            );
+
+    }
+
+
+    if (!saved) {
+
+        saved =
+            sessionStorage.getItem(
+                "novelReaderData"
+            );
+
+    }
+
 
     if (!saved) {
 
@@ -222,33 +229,16 @@ function getStoredSession() {
     }
 
 
-    /*
-     * Parse JSON.
-     */
-
     try {
 
-        return JSON.parse(
-            saved
-        );
+        return JSON.parse(saved);
 
     } catch (error) {
 
         console.error(
-            "Session Reader rusak:",
+            "Session tidak valid:",
             error
         );
-
-
-        localStorage.removeItem(
-            "novelReaderSession"
-        );
-
-
-        sessionStorage.removeItem(
-            "novelReaderSession"
-        );
-
 
         return null;
 
