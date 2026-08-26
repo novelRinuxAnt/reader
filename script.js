@@ -1,17 +1,15 @@
 "use strict";
 
-
-/* =========================================
-   GOOGLE APPS SCRIPT API
-========================================= */
-
-const API_URL =
-    "https://script.google.com/macros/s/AKfycbyWqoJO_4qoYfFxNshOdd-jtIBfahASiaTmwD7POE56bCu0fBlnKdDpTuwwQPjUq6gOZg/exec";
+/* =========================================================
+   NOVEL RINU'XANT
+   READER
+   VERSION 2.0
+   ========================================================= */
 
 
-/* =========================================
+/* =========================================================
    ELEMENT
-========================================= */
+========================================================= */
 
 const pagesContainer =
     document.getElementById("pages");
@@ -41,18 +39,18 @@ const pageCounter =
     document.getElementById("pageCounter");
 
 
-/* =========================================
+/* =========================================================
    DATA
-========================================= */
+========================================================= */
 
 let readerData = null;
 
 let pages = [];
 
 
-/* =========================================
+/* =========================================================
    START
-========================================= */
+========================================================= */
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -60,34 +58,40 @@ document.addEventListener(
 );
 
 
-/* =========================================
+/* =========================================================
    INITIALIZE
-========================================= */
+========================================================= */
 
 function initializeReader() {
 
-    showLoading();
+    /*
+     * Login Anda sekarang menyimpan:
+     *
+     * novelReaderSession
+     */
 
-    hideError();
+    const localSession =
+        localStorage.getItem(
+            "novelReaderSession"
+        );
+
+
+    const sessionSession =
+        sessionStorage.getItem(
+            "novelReaderSession"
+        );
 
 
     /*
-     * Login menyimpan session dengan nama:
-     *
-     * novelReaderSession
-     *
-     * dan bisa berada di:
-     *
-     * localStorage
-     * atau
-     * sessionStorage
+     * Prioritaskan localStorage.
      */
 
-    const savedSession =
-        getStoredSession();
+    const savedData =
+        localSession ||
+        sessionSession;
 
 
-    if (!savedSession) {
+    if (!savedData) {
 
         showError(
             "Data login tidak ditemukan. Silakan login terlebih dahulu."
@@ -98,16 +102,65 @@ function initializeReader() {
     }
 
 
+    try {
+
+        readerData =
+            JSON.parse(
+                savedData
+            );
+
+
+    } catch (error) {
+
+        console.error(
+            "Session Reader rusak:",
+            error
+        );
+
+
+        showError(
+            "Data login tidak valid. Silakan login kembali."
+        );
+
+
+        return;
+
+    }
+
+
+    loadReader();
+
+
+}
+
+
+/* =========================================================
+   LOAD READER
+========================================================= */
+
+function loadReader() {
+
+    if (!readerData) {
+
+        showError(
+            "Data Reader tidak tersedia."
+        );
+
+        return;
+
+    }
+
+
     /*
-     * Pastikan login benar.
+     * Pastikan login valid.
      */
 
     if (
-        savedSession.loggedIn !== true
+        readerData.loggedIn !== true
     ) {
 
         showError(
-            "Session login tidak valid."
+            "Sesi login tidak valid."
         );
 
         return;
@@ -121,7 +174,7 @@ function initializeReader() {
 
     if (
         !Array.isArray(
-            savedSession.files
+            readerData.files
         )
     ) {
 
@@ -135,29 +188,11 @@ function initializeReader() {
 
 
     /*
-     * Simpan ke readerData.
-     */
-
-    readerData =
-        savedSession;
-
-
-    /*
-     * Urutkan WebP.
-     */
-
-    pages =
-        sortPages(
-            readerData.files
-        );
-
-
-    /*
      * Pastikan ada halaman.
      */
 
     if (
-        pages.length === 0
+        readerData.files.length === 0
     ) {
 
         showError(
@@ -170,105 +205,44 @@ function initializeReader() {
 
 
     /*
-     * Tampilkan Reader.
+     * Sort halaman.
+     */
+
+    pages =
+        sortPages(
+            readerData.files
+        );
+
+
+    /*
+     * Update header.
      */
 
     updateHeader();
+
+
+    /*
+     * Tampilkan WebP.
+     */
 
     renderPages();
 
 }
 
 
-/* =========================================
-   GET STORED SESSION
-========================================= */
-
-function getStoredSession() {
-
-    let saved =
-        localStorage.getItem(
-            "novelReaderSession"
-        );
-
-
-    if (!saved) {
-
-        saved =
-            sessionStorage.getItem(
-                "novelReaderSession"
-            );
-
-    }
-
-
-    if (!saved) {
-
-        saved =
-            localStorage.getItem(
-                "novelReaderData"
-            );
-
-    }
-
-
-    if (!saved) {
-
-        saved =
-            sessionStorage.getItem(
-                "novelReaderData"
-            );
-
-    }
-
-
-    if (!saved) {
-
-        return null;
-
-    }
-
-
-    try {
-
-        return JSON.parse(saved);
-
-    } catch (error) {
-
-        console.error(
-            "Session tidak valid:",
-            error
-        );
-
-        return null;
-
-    }
-
-}
-
-
-/* =========================================
+/* =========================================================
    SORT PAGE
-========================================= */
+========================================================= */
 
 function sortPages(files) {
 
     return [...files].sort(
         function(a, b) {
 
-            const numberA =
-                getPageNumber(
-                    a.name
-                );
-
-
-            const numberB =
-                getPageNumber(
-                    b.name
-                );
-
-
-            return numberA - numberB;
+            return (
+                getPageNumber(a.name) -
+                getPageNumber(b.name)
+            );
 
         }
     );
@@ -276,9 +250,9 @@ function sortPages(files) {
 }
 
 
-/* =========================================
+/* =========================================================
    GET PAGE NUMBER
-========================================= */
+========================================================= */
 
 function getPageNumber(filename) {
 
@@ -310,33 +284,39 @@ function getPageNumber(filename) {
 }
 
 
-/* =========================================
+/* =========================================================
    HEADER
-========================================= */
+========================================================= */
 
 function updateHeader() {
 
-    const username =
-        readerData.username ||
-        "";
+    if (readerStatus) {
+
+        const username =
+            readerData.username || "";
 
 
-    readerStatus.textContent =
-        username
-            ? "Pembaca: " + username
-            : pages.length + " halaman";
+        readerStatus.textContent =
+            username
+                ? "Pembaca: " + username
+                : pages.length + " halaman";
+
+    }
 
 
-    pageCounter.textContent =
-        "1 / " +
-        pages.length;
+    if (pageCounter) {
+
+        pageCounter.textContent =
+            "1 / " + pages.length;
+
+    }
 
 }
 
 
-/* =========================================
+/* =========================================================
    RENDER PAGES
-========================================= */
+========================================================= */
 
 function renderPages() {
 
@@ -363,18 +343,12 @@ function renderPages() {
 
     updatePageCounter();
 
-
-    window.scrollTo(
-        0,
-        0
-    );
-
 }
 
 
-/* =========================================
+/* =========================================================
    CREATE PAGE
-========================================= */
+========================================================= */
 
 function createPage(
     file,
@@ -402,8 +376,19 @@ function createPage(
 
 
     /*
-     * URL WebP yang diberikan
-     * Google Apps Script.
+     * ======================================================
+     * URL DARI GOOGLE APPS SCRIPT
+     * ======================================================
+     *
+     * Contoh:
+     *
+     * https://drive.google.com/uc?
+     * id=XXXX
+     * &export=download
+     *
+     * Jangan membuat URL Drive sendiri.
+     *
+     * Gunakan URL yang diberikan GS.
      */
 
     img.src =
@@ -417,8 +402,10 @@ function createPage(
 
 
     /*
-     * Beberapa halaman pertama
-     * langsung dimuat.
+     * 3 halaman pertama
+     * dimuat langsung.
+     *
+     * Sisanya lazy loading.
      */
 
     img.loading =
@@ -432,22 +419,27 @@ function createPage(
 
 
     /*
-     * Jika gambar berhasil.
+     * ======================================================
+     * SUCCESS
+     * ======================================================
      */
 
     img.onload =
         function() {
 
-            console.log(
-                "WebP loaded:",
-                file.name
+            page.classList.add(
+                "loaded"
             );
+
+            updatePageCounter();
 
         };
 
 
     /*
-     * Jika gambar gagal.
+     * ======================================================
+     * ERROR
+     * ======================================================
      */
 
     img.onerror =
@@ -470,16 +462,8 @@ function createPage(
                 );
 
 
-            error.style.padding =
-                "40px 20px";
-
-
-            error.style.textAlign =
-                "center";
-
-
-            error.style.color =
-                "#aaa";
+            error.className =
+                "page-error";
 
 
             error.textContent =
@@ -506,13 +490,16 @@ function createPage(
 }
 
 
-/* =========================================
+/* =========================================================
    PAGE COUNTER
-========================================= */
+========================================================= */
 
 function updatePageCounter() {
 
-    if (!pages.length) {
+    if (
+        !pages.length ||
+        !pageCounter
+    ) {
 
         return;
 
@@ -538,10 +525,7 @@ function updatePageCounter() {
 
 
     pageElements.forEach(
-        function(
-            page,
-            index
-        ) {
+        function(page, index) {
 
             const rect =
                 page.getBoundingClientRect();
@@ -585,9 +569,9 @@ function updatePageCounter() {
 }
 
 
-/* =========================================
+/* =========================================================
    SCROLL
-========================================= */
+========================================================= */
 
 let scrollTimer =
     null;
@@ -623,9 +607,9 @@ window.addEventListener(
 );
 
 
-/* =========================================
+/* =========================================================
    BACK
-========================================= */
+========================================================= */
 
 if (backButton) {
 
@@ -642,9 +626,9 @@ if (backButton) {
 }
 
 
-/* =========================================
+/* =========================================================
    LOGOUT
-========================================= */
+========================================================= */
 
 if (logoutButton) {
 
@@ -662,16 +646,6 @@ if (logoutButton) {
             );
 
 
-            localStorage.removeItem(
-                "novelReaderData"
-            );
-
-
-            sessionStorage.removeItem(
-                "novelReaderData"
-            );
-
-
             window.location.href =
                 "https://novelrinuxant.github.io/login/";
 
@@ -681,9 +655,9 @@ if (logoutButton) {
 }
 
 
-/* =========================================
+/* =========================================================
    RETRY
-========================================= */
+========================================================= */
 
 if (retryButton) {
 
@@ -699,21 +673,9 @@ if (retryButton) {
 }
 
 
-/* =========================================
+/* =========================================================
    LOADING
-========================================= */
-
-function showLoading() {
-
-    if (loading) {
-
-        loading.style.display =
-            "";
-
-    }
-
-}
-
+========================================================= */
 
 function hideLoading() {
 
@@ -727,13 +689,18 @@ function hideLoading() {
 }
 
 
-/* =========================================
+/* =========================================================
    ERROR
-========================================= */
+========================================================= */
 
 function showError(message) {
 
-    hideLoading();
+    if (loading) {
+
+        loading.style.display =
+            "none";
+
+    }
 
 
     if (pagesContainer) {
@@ -761,6 +728,10 @@ function showError(message) {
 
 }
 
+
+/* =========================================================
+   HIDE ERROR
+========================================================= */
 
 function hideError() {
 
