@@ -61,128 +61,263 @@ document.addEventListener(
 
 
 /* =========================================
-   INITIALIZE
+   INITIALIZE READER
 ========================================= */
 
 function initializeReader() {
 
-    const savedData =
-        localStorage.getItem("novelReaderData");
+    showLoading();
+
+    hideError();
 
 
     /*
-     * Jika login menyimpan data
-     * dengan nama novelReaderData
+     * Ambil data login dari localStorage.
+     *
+     * Kita mendukung beberapa kemungkinan
+     * nama penyimpanan agar kompatibel dengan
+     * sistem login yang sudah ada.
      */
 
-    if (savedData) {
+    const savedData =
+        localStorage.getItem(
+            "novelReaderData"
+        );
 
-        try {
 
-            readerData =
-                JSON.parse(savedData);
+    if (!savedData) {
 
-            loadReaderFromSavedData();
+        showError(
+            "Data login tidak ditemukan. Silakan login terlebih dahulu."
+        );
 
-            return;
-
-        } catch (error) {
-
-            console.error(
-                "Data Reader rusak:",
-                error
-            );
-
-        }
+        return;
 
     }
 
 
-    /*
-     * Jika belum ada data login,
-     * kita tampilkan error.
-     */
+    try {
 
-    showError(
-        "Data login tidak ditemukan. Silakan login terlebih dahulu."
-    );
+        const loginData =
+            JSON.parse(savedData);
+
+
+        /*
+         * Pastikan username tersedia.
+         */
+
+        const username =
+            loginData.username ||
+            loginData.userName ||
+            loginData.user ||
+            "";
+
+
+        /*
+         * Pastikan password tersedia.
+         */
+
+        const password =
+            loginData.password ||
+            loginData.pass ||
+            "";
+
+
+        if (!username) {
+
+            showError(
+                "Username tidak ditemukan. Silakan login kembali."
+            );
+
+            return;
+
+        }
+
+
+        if (!password) {
+
+            showError(
+                "Password tidak ditemukan. Silakan login kembali."
+            );
+
+            return;
+
+        }
+
+
+        /*
+         * Panggil Google Apps Script.
+         */
+
+        loadReaderFromAPI(
+            username,
+            password
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Data login rusak:",
+            error
+        );
+
+
+        showError(
+            "Data login tidak valid. Silakan login kembali."
+        );
+
+    }
 
 }
 
 
 /* =========================================
-   LOAD SAVED DATA
+   LOAD READER FROM API
 ========================================= */
 
-function loadReaderFromSavedData() {
+async function loadReaderFromAPI(
+    username,
+    password
+) {
 
-    if (!readerData) {
+    try {
+
+        /*
+         * Encode username dan password
+         * agar aman digunakan sebagai URL.
+         */
+
+        const url =
+            API_URL +
+            "?username=" +
+            encodeURIComponent(username) +
+            "&password=" +
+            encodeURIComponent(password);
+
+
+        console.log(
+            "Memanggil Reader API..."
+        );
+
+
+        const response =
+            await fetch(
+                url,
+                {
+                    method: "GET",
+                    cache: "no-store"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP " +
+                response.status
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "Response API:",
+            data
+        );
+
+
+        /*
+         * Periksa success.
+         */
+
+        if (data.success !== true) {
+
+            throw new Error(
+                data.message ||
+                "Login API gagal."
+            );
+
+        }
+
+
+        /*
+         * Pastikan files tersedia.
+         */
+
+        if (
+            !Array.isArray(
+                data.files
+            )
+        ) {
+
+            throw new Error(
+                "Daftar WebP tidak ditemukan dari API."
+            );
+
+        }
+
+
+        /*
+         * Simpan data Reader.
+         */
+
+        readerData =
+            data;
+
+
+        /*
+         * Urutkan halaman.
+         */
+
+        pages =
+            sortPages(
+                data.files
+            );
+
+
+        if (pages.length === 0) {
+
+            throw new Error(
+                "Folder Drive tidak memiliki file WebP."
+            );
+
+        }
+
+
+        /*
+         * Update tampilan.
+         */
+
+        updateHeader();
+
+        renderPages();
+
+
+        console.log(
+            "Reader berhasil dimuat:",
+            pages.length,
+            "halaman"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Reader API Error:",
+            error
+        );
+
 
         showError(
-            "Data Reader tidak tersedia."
+            "Gagal memuat Reader: " +
+            error.message
         );
-
-        return;
 
     }
-
-
-    /*
-     * API Anda memiliki:
-     *
-     * success
-     * username
-     * folder
-     * total
-     * files
-     */
-
-    if (readerData.success !== true) {
-
-        showError(
-            "Login tidak berhasil."
-        );
-
-        return;
-
-    }
-
-
-    if (
-        !Array.isArray(
-            readerData.files
-        )
-    ) {
-
-        showError(
-            "Daftar WebP tidak ditemukan."
-        );
-
-        return;
-
-    }
-
-
-    pages =
-        sortPages(
-            readerData.files
-        );
-
-
-    if (pages.length === 0) {
-
-        showError(
-            "Tidak ada halaman WebP."
-        );
-
-        return;
-
-    }
-
-
-    updateHeader();
-
-    renderPages();
 
 }
 
@@ -197,10 +332,16 @@ function sortPages(files) {
         function(a, b) {
 
             const numberA =
-                getPageNumber(a.name);
+                getPageNumber(
+                    a.name
+                );
+
 
             const numberB =
-                getPageNumber(b.name);
+                getPageNumber(
+                    b.name
+                );
+
 
             return numberA - numberB;
 
@@ -214,10 +355,14 @@ function sortPages(files) {
    GET PAGE NUMBER
 ========================================= */
 
-function getPageNumber(filename) {
+function getPageNumber(
+    filename
+) {
 
     if (!filename) {
+
         return 0;
+
     }
 
 
@@ -226,7 +371,7 @@ function getPageNumber(filename) {
      *
      * page-0256.webp
      *
-     * hasil:
+     * menjadi:
      *
      * 256
      */
@@ -238,7 +383,9 @@ function getPageNumber(filename) {
 
 
     if (!match) {
+
         return 0;
+
     }
 
 
@@ -257,7 +404,8 @@ function getPageNumber(filename) {
 function updateHeader() {
 
     const username =
-        readerData.username || "";
+        readerData.username ||
+        "";
 
 
     readerStatus.textContent =
@@ -267,7 +415,8 @@ function updateHeader() {
 
 
     pageCounter.textContent =
-        "1 / " + pages.length;
+        "1 / " +
+        pages.length;
 
 }
 
@@ -283,7 +432,8 @@ function renderPages() {
     hideError();
 
 
-    pagesContainer.innerHTML = "";
+    pagesContainer.innerHTML =
+        "";
 
 
     pages.forEach(
@@ -300,6 +450,16 @@ function renderPages() {
 
     updatePageCounter();
 
+
+    /*
+     * Scroll ke halaman pertama.
+     */
+
+    window.scrollTo(
+        0,
+        0
+    );
+
 }
 
 
@@ -313,7 +473,9 @@ function createPage(
 ) {
 
     const page =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     page.className =
@@ -325,13 +487,13 @@ function createPage(
 
 
     const img =
-        document.createElement("img");
+        document.createElement(
+            "img"
+        );
 
 
     /*
-     * API sudah memberikan URL:
-     *
-     * https://drive.google.com/uc?export=view&id=...
+     * URL WebP dari Apps Script.
      */
 
     img.src =
@@ -340,8 +502,14 @@ function createPage(
 
     img.alt =
         file.name ||
-        "Halaman " + (index + 1);
+        "Halaman " +
+        (index + 1);
 
+
+    /*
+     * Tiga halaman pertama
+     * dimuat langsung.
+     */
 
     img.loading =
         index < 3
@@ -354,12 +522,42 @@ function createPage(
 
 
     /*
-     * Jika gambar gagal,
-     * tampilkan pesan sederhana.
+     * Tambahkan title.
+     */
+
+    img.title =
+        file.name ||
+        "";
+
+
+    /*
+     * Jika gambar berhasil dimuat.
+     */
+
+    img.onload =
+        function() {
+
+            console.log(
+                "Loaded:",
+                file.name
+            );
+
+        };
+
+
+    /*
+     * Jika gambar gagal dimuat.
      */
 
     img.onerror =
         function() {
+
+            console.error(
+                "Gagal memuat gambar:",
+                file.name,
+                file.url
+            );
+
 
             img.style.display =
                 "none";
@@ -371,8 +569,16 @@ function createPage(
                 );
 
 
+            error.className =
+                "page-error";
+
+
             error.style.padding =
                 "40px 20px";
+
+
+            error.style.textAlign =
+                "center";
 
 
             error.style.color =
@@ -391,7 +597,9 @@ function createPage(
         };
 
 
-    page.appendChild(img);
+    page.appendChild(
+        img
+    );
 
 
     pagesContainer.appendChild(
@@ -408,7 +616,9 @@ function createPage(
 function updatePageCounter() {
 
     if (!pages.length) {
+
         return;
+
     }
 
 
@@ -431,7 +641,10 @@ function updatePageCounter() {
 
 
     pageElements.forEach(
-        function(page, index) {
+        function(
+            page,
+            index
+        ) {
 
             const rect =
                 page.getBoundingClientRect();
@@ -457,6 +670,7 @@ function updatePageCounter() {
                 smallestDistance =
                     distance;
 
+
                 currentPage =
                     index + 1;
 
@@ -478,7 +692,8 @@ function updatePageCounter() {
    SCROLL
 ========================================= */
 
-let scrollTimer = null;
+let scrollTimer =
+    null;
 
 
 window.addEventListener(
@@ -486,7 +701,9 @@ window.addEventListener(
     function() {
 
         if (scrollTimer) {
+
             return;
+
         }
 
 
@@ -496,7 +713,8 @@ window.addEventListener(
 
                     updatePageCounter();
 
-                    scrollTimer = null;
+                    scrollTimer =
+                        null;
 
                 }
             );
@@ -536,12 +754,6 @@ logoutButton.addEventListener(
         );
 
 
-        /*
-         * Jika nanti ada token,
-         * bisa dihapus di sini.
-         */
-
-
         window.location.href =
             "https://novelrinuxant.github.io/login/";
 
@@ -567,6 +779,14 @@ retryButton.addEventListener(
    LOADING
 ========================================= */
 
+function showLoading() {
+
+    loading.style.display =
+        "";
+
+}
+
+
 function hideLoading() {
 
     loading.style.display =
@@ -579,10 +799,11 @@ function hideLoading() {
    ERROR
 ========================================= */
 
-function showError(message) {
+function showError(
+    message
+) {
 
-    loading.style.display =
-        "none";
+    hideLoading();
 
 
     pagesContainer.innerHTML =
