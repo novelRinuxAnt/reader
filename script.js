@@ -3,8 +3,42 @@
 /* =========================================================
    NOVEL RINU'XANT
    READER
-   VERSION 2.0
+   VERSION 3.0 FINAL
+   GOOGLE DRIVE THUMBNAIL ENGINE
    ========================================================= */
+
+
+/* =========================================================
+   CONFIGURATION
+========================================================= */
+
+/*
+ * URL gambar Google Drive yang TERBUKTI berhasil
+ * menampilkan WebP di browser.
+ *
+ * Jangan gunakan /uc?export=download
+ */
+
+const DRIVE_IMAGE_URL =
+    "https://drive.google.com/thumbnail?id=";
+
+
+/*
+ * Ukuran gambar.
+ *
+ * w2000 = lebar maksimal 2000 pixel.
+ */
+
+const DRIVE_IMAGE_SIZE =
+    "&sz=w2000";
+
+
+/*
+ * Halaman login.
+ */
+
+const LOGIN_URL =
+    "https://novelrinuxant.github.io/login/";
 
 
 /* =========================================================
@@ -43,9 +77,11 @@ const pageCounter =
    DATA
 ========================================================= */
 
-let readerData = null;
+let readerData =
+    null;
 
-let pages = [];
+let pages =
+    [];
 
 
 /* =========================================================
@@ -59,48 +95,92 @@ document.addEventListener(
 
 
 /* =========================================================
-   INITIALIZE
+   INITIALIZE READER
 ========================================================= */
 
 function initializeReader() {
 
+    console.log(
+        "Novel Reader: initializing..."
+    );
+
+
     /*
-     * Login Anda sekarang menyimpan:
-     *
-     * novelReaderSession
+     * ======================================================
+     * 1. Coba novelReaderSession
+     * ======================================================
      */
 
-    const localSession =
+    let savedData =
         localStorage.getItem(
             "novelReaderSession"
         );
 
 
-    const sessionSession =
-        sessionStorage.getItem(
-            "novelReaderSession"
-        );
+    if (!savedData) {
+
+        savedData =
+            sessionStorage.getItem(
+                "novelReaderSession"
+            );
+
+    }
 
 
     /*
-     * Prioritaskan localStorage.
+     * ======================================================
+     * 2. Jika tidak ada, coba novelReaderData
+     * ======================================================
      */
 
-    const savedData =
-        localSession ||
-        sessionSession;
+    if (!savedData) {
+
+        savedData =
+            localStorage.getItem(
+                "novelReaderData"
+            );
+
+    }
 
 
     if (!savedData) {
+
+        savedData =
+            sessionStorage.getItem(
+                "novelReaderData"
+            );
+
+    }
+
+
+    /*
+     * ======================================================
+     * Tidak ada session
+     * ======================================================
+     */
+
+    if (!savedData) {
+
+        console.error(
+            "Novel Reader: session tidak ditemukan."
+        );
+
 
         showError(
             "Data login tidak ditemukan. Silakan login terlebih dahulu."
         );
 
+
         return;
 
     }
 
+
+    /*
+     * ======================================================
+     * PARSE JSON
+     * ======================================================
+     */
 
     try {
 
@@ -109,13 +189,15 @@ function initializeReader() {
                 savedData
             );
 
-
     } catch (error) {
 
         console.error(
             "Session Reader rusak:",
             error
         );
+
+
+        clearSessions();
 
 
         showError(
@@ -128,8 +210,13 @@ function initializeReader() {
     }
 
 
-    loadReader();
+    /*
+     * ======================================================
+     * LOAD READER
+     * ======================================================
+     */
 
+    loadReader();
 
 }
 
@@ -146,13 +233,16 @@ function loadReader() {
             "Data Reader tidak tersedia."
         );
 
+
         return;
 
     }
 
 
     /*
-     * Pastikan login valid.
+     * ======================================================
+     * CEK LOGIN
+     * ======================================================
      */
 
     if (
@@ -163,13 +253,16 @@ function loadReader() {
             "Sesi login tidak valid."
         );
 
+
         return;
 
     }
 
 
     /*
-     * Pastikan files tersedia.
+     * ======================================================
+     * CEK FILES
+     * ======================================================
      */
 
     if (
@@ -182,14 +275,11 @@ function loadReader() {
             "Daftar WebP tidak ditemukan."
         );
 
+
         return;
 
     }
 
-
-    /*
-     * Pastikan ada halaman.
-     */
 
     if (
         readerData.files.length === 0
@@ -199,13 +289,16 @@ function loadReader() {
             "Tidak ada halaman WebP."
         );
 
+
         return;
 
     }
 
 
     /*
-     * Sort halaman.
+     * ======================================================
+     * SORT
+     * ======================================================
      */
 
     pages =
@@ -215,15 +308,73 @@ function loadReader() {
 
 
     /*
-     * Update header.
+     * ======================================================
+     * CEK ID FILE
+     * ======================================================
+     */
+
+    const validPages =
+        pages.filter(
+            function(file) {
+
+                return (
+                    file &&
+                    file.id
+                );
+
+            }
+        );
+
+
+    if (
+        validPages.length === 0
+    ) {
+
+        showError(
+            "ID file WebP tidak ditemukan."
+        );
+
+
+        return;
+
+    }
+
+
+    /*
+     * Gunakan hanya file yang
+     * mempunyai ID Google Drive.
+     */
+
+    pages =
+        validPages;
+
+
+    console.log(
+        "Novel Reader:",
+        {
+            username:
+                readerData.username,
+
+            total:
+                pages.length
+        }
+    );
+
+
+    /*
+     * ======================================================
+     * HEADER
+     * ======================================================
      */
 
     updateHeader();
 
 
     /*
-     * Tampilkan WebP.
-     */
+     * ======================================================
+     * RENDER
+     * ======================================================
+ */
 
     renderPages();
 
@@ -234,7 +385,9 @@ function loadReader() {
    SORT PAGE
 ========================================================= */
 
-function sortPages(files) {
+function sortPages(
+    files
+) {
 
     return [...files].sort(
         function(a, b) {
@@ -254,7 +407,9 @@ function sortPages(files) {
    GET PAGE NUMBER
 ========================================================= */
 
-function getPageNumber(filename) {
+function getPageNumber(
+    filename
+) {
 
     if (!filename) {
 
@@ -285,6 +440,33 @@ function getPageNumber(filename) {
 
 
 /* =========================================================
+   CREATE DRIVE IMAGE URL
+========================================================= */
+
+function createDriveImageUrl(
+    fileId
+) {
+
+    /*
+     * ======================================================
+     * URL FINAL
+     *
+     * https://drive.google.com/thumbnail?id=FILE_ID&sz=w2000
+     * ======================================================
+     */
+
+    return (
+        DRIVE_IMAGE_URL +
+        encodeURIComponent(
+            fileId
+        ) +
+        DRIVE_IMAGE_SIZE
+    );
+
+}
+
+
+/* =========================================================
    HEADER
 ========================================================= */
 
@@ -299,7 +481,8 @@ function updateHeader() {
         readerStatus.textContent =
             username
                 ? "Pembaca: " + username
-                : pages.length + " halaman";
+                : pages.length +
+                  " halaman";
 
     }
 
@@ -307,7 +490,8 @@ function updateHeader() {
     if (pageCounter) {
 
         pageCounter.textContent =
-            "1 / " + pages.length;
+            "1 / " +
+            pages.length;
 
     }
 
@@ -325,9 +509,29 @@ function renderPages() {
     hideError();
 
 
+    if (!pagesContainer) {
+
+        console.error(
+            "Element #pages tidak ditemukan."
+        );
+
+
+        return;
+
+    }
+
+
+    /*
+     * Bersihkan halaman lama.
+     */
+
     pagesContainer.innerHTML =
         "";
 
+
+    /*
+     * Buat seluruh halaman.
+     */
 
     pages.forEach(
         function(file, index) {
@@ -369,6 +573,12 @@ function createPage(
         index + 1;
 
 
+    /*
+     * ======================================================
+     * IMAGE
+     * ======================================================
+     */
+
     const img =
         document.createElement(
             "img"
@@ -377,25 +587,54 @@ function createPage(
 
     /*
      * ======================================================
-     * URL DARI GOOGLE APPS SCRIPT
+     * BUAT URL THUMBNAIL
      * ======================================================
      *
-     * Contoh:
+     * INI BAGIAN PALING PENTING.
      *
-     * https://drive.google.com/uc?
-     * id=XXXX
-     * &export=download
+     * Tidak menggunakan:
      *
-     * Jangan membuat URL Drive sendiri.
+     * /uc?id=...&export=download
      *
-     * Gunakan URL yang diberikan GS.
+     * Tetapi menggunakan:
+     *
+     * /thumbnail?id=...&sz=w2000
+     *
+     */
+
+    const imageUrl =
+        createDriveImageUrl(
+            file.id
+        );
+
+
+    /*
+     * Simpan URL untuk debugging.
+     */
+
+    img.dataset.driveId =
+        file.id;
+
+
+    img.dataset.imageUrl =
+        imageUrl;
+
+
+    /*
+     * ======================================================
+     * SRC
+     * ======================================================
      */
 
     img.src =
-        "https://drive.google.com/uc?id=" +
-       encodeURIComponent(file.id) +
-       "&export=download";
+        imageUrl;
 
+
+    /*
+     * ======================================================
+     * ALT
+     * ======================================================
+     */
 
     img.alt =
         file.name ||
@@ -404,10 +643,9 @@ function createPage(
 
 
     /*
-     * 3 halaman pertama
-     * dimuat langsung.
-     *
-     * Sisanya lazy loading.
+     * ======================================================
+     * LAZY LOADING
+     * ======================================================
      */
 
     img.loading =
@@ -433,6 +671,12 @@ function createPage(
                 "loaded"
             );
 
+
+            /*
+             * Setelah gambar berhasil,
+             * update counter.
+             */
+
             updatePageCounter();
 
         };
@@ -448,10 +692,26 @@ function createPage(
         function() {
 
             console.error(
-                "Gagal memuat:",
-                file.name,
-                file.url
+                "Gagal memuat WebP:",
+                {
+                    name:
+                        file.name,
+
+                    id:
+                        file.id,
+
+                    url:
+                        imageUrl
+                }
             );
+
+
+            /*
+             * Jangan menggunakan file.url
+             * lagi.
+             *
+             * Kita hanya menggunakan file.id.
+             */
 
 
             img.style.display =
@@ -470,7 +730,11 @@ function createPage(
 
             error.textContent =
                 "Gagal memuat " +
-                file.name;
+                (
+                    file.name ||
+                    "halaman " +
+                    (index + 1)
+                );
 
 
             page.appendChild(
@@ -479,6 +743,12 @@ function createPage(
 
         };
 
+
+    /*
+     * ======================================================
+     * APPEND
+     * ======================================================
+     */
 
     page.appendChild(
         img
@@ -514,6 +784,15 @@ function updatePageCounter() {
         );
 
 
+    if (
+        !pageElements.length
+    ) {
+
+        return;
+
+    }
+
+
     const viewportCenter =
         window.innerHeight / 2;
 
@@ -531,6 +810,20 @@ function updatePageCounter() {
 
             const rect =
                 page.getBoundingClientRect();
+
+
+            /*
+             * Jika halaman belum punya
+             * ukuran, jangan dipakai.
+             */
+
+            if (
+                rect.height <= 0
+            ) {
+
+                return;
+
+            }
 
 
             const pageCenter =
@@ -596,11 +889,29 @@ window.addEventListener(
 
                     updatePageCounter();
 
+
                     scrollTimer =
                         null;
 
                 }
             );
+
+    },
+    {
+        passive: true
+    }
+);
+
+
+/* =========================================================
+   RESIZE
+========================================================= */
+
+window.addEventListener(
+    "resize",
+    function() {
+
+        updatePageCounter();
 
     },
     {
@@ -620,7 +931,7 @@ if (backButton) {
         function() {
 
             window.location.href =
-                "https://novelrinuxant.github.io/login/";
+                LOGIN_URL;
 
         }
     );
@@ -638,20 +949,49 @@ if (logoutButton) {
         "click",
         function() {
 
-            localStorage.removeItem(
-                "novelReaderSession"
-            );
-
-
-            sessionStorage.removeItem(
-                "novelReaderSession"
-            );
+            clearSessions();
 
 
             window.location.href =
-                "https://novelrinuxant.github.io/login/";
+                LOGIN_URL;
 
         }
+    );
+
+}
+
+
+/* =========================================================
+   CLEAR SESSIONS
+========================================================= */
+
+function clearSessions() {
+
+    /*
+     * Session utama
+     */
+
+    localStorage.removeItem(
+        "novelReaderSession"
+    );
+
+
+    sessionStorage.removeItem(
+        "novelReaderSession"
+    );
+
+
+    /*
+     * Session kompatibilitas
+     */
+
+    localStorage.removeItem(
+        "novelReaderData"
+    );
+
+
+    sessionStorage.removeItem(
+        "novelReaderData"
     );
 
 }
@@ -695,7 +1035,9 @@ function hideLoading() {
    ERROR
 ========================================================= */
 
-function showError(message) {
+function showError(
+    message
+) {
 
     if (loading) {
 
