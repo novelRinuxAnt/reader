@@ -1,8 +1,8 @@
 /* =========================================================
    NOVEL RINU'XANT
    READER
-   VERSION 3.0
-   COMPLETE UI
+   VERSION 3.1
+   APP / PWA FULLSCREEN UI
    ========================================================= */
 
 
@@ -19,13 +19,37 @@
 
 
 html {
+    width: 100%;
+    min-height: 100%;
+
     scroll-behavior: smooth;
 
     background: #111;
+
+    /*
+       Memungkinkan tampilan edge-to-edge
+       pada PWA / standalone
+    */
+    -webkit-text-size-adjust: 100%;
 }
 
 
 body {
+
+    width: 100%;
+
+    min-width: 100%;
+
+    min-height: 100vh;
+
+    /*
+       Dynamic viewport untuk Android / Chrome
+    */
+    min-height: 100dvh;
+
+    margin: 0;
+
+    padding: 0;
 
     background: #111;
 
@@ -36,19 +60,93 @@ body {
         Helvetica,
         sans-serif;
 
-    min-height: 100vh;
-
     overflow-x: hidden;
+
+    /*
+       Mencegah efek overscroll horizontal
+    */
+    overscroll-behavior-x: none;
 
     transition:
         background 0.25s ease,
         color 0.25s ease;
+
+    /*
+       Safe area untuk HP dengan notch
+    */
+    padding-top: env(safe-area-inset-top);
+
+    padding-right: env(safe-area-inset-right);
+
+    padding-left: env(safe-area-inset-left);
 }
 
 
+/* =========================================================
+   APP / PWA MODE
+========================================================= */
+
+/*
+   Browser yang mendukung display-mode: standalone
+*/
+
+@media (display-mode: standalone) {
+
+    html,
+    body {
+
+        width: 100%;
+
+        min-height: 100vh;
+
+        min-height: 100dvh;
+
+        overflow-x: hidden;
+    }
+
+}
+
+
+/*
+   iOS standalone
+*/
+
+@media (display-mode: standalone) {
+
+    body {
+
+        /*
+           Area bawah untuk gesture bar
+        */
+        padding-bottom:
+            env(safe-area-inset-bottom);
+    }
+
+}
+
+
+/* =========================================================
+   GENERAL
+========================================================= */
+
 button,
 input {
+
     font-family: inherit;
+}
+
+
+button {
+
+    -webkit-tap-highlight-color: transparent;
+
+    touch-action: manipulation;
+}
+
+
+img {
+
+    max-width: 100%;
 }
 
 
@@ -68,7 +166,8 @@ input {
 
     min-height: 58px;
 
-    padding: 8px 12px;
+    padding:
+        8px 12px;
 
     display: flex;
 
@@ -109,6 +208,8 @@ input {
     align-items: center;
 
     gap: 6px;
+
+    flex-shrink: 0;
 }
 
 
@@ -202,7 +303,8 @@ input {
 
     width: auto;
 
-    padding: 0 13px;
+    padding:
+        0 13px;
 
     font-size: 12px;
 }
@@ -216,7 +318,9 @@ input {
 
     width: 100%;
 
-    min-height: 100vh;
+    min-height: calc(100vh - 58px);
+
+    min-height: calc(100dvh - 58px);
 
     display: flex;
 
@@ -258,25 +362,31 @@ input {
 
     overflow: visible;
 
-    border-bottom: 2px solid #333;
-   
+    border-bottom:
+        2px solid #333;
+
     margin-bottom: 14px;
 
     padding-bottom: 14px;
-   
 }
+
 
 .page:last-child {
 
     margin-bottom: 0;
-
 }
+
 
 body.light-theme .page {
 
-    border-bottom: 2px solid #ccc;
-
+    border-bottom:
+        2px solid #ccc;
 }
+
+
+/* =========================================================
+   PAGE IMAGE
+========================================================= */
 
 .page img {
 
@@ -315,6 +425,8 @@ body.light-theme .page {
 body.zoom-active {
 
     overflow-x: auto;
+
+    overscroll-behavior-x: auto;
 }
 
 
@@ -385,7 +497,8 @@ body.zoom-active .page img {
 
     z-index: 5;
 
-    padding: 4px 7px;
+    padding:
+        4px 7px;
 
     font-size: 10px;
 
@@ -410,6 +523,8 @@ body.zoom-active .page img {
 
     min-height: 70vh;
 
+    min-height: 70dvh;
+
     display: flex;
 
     flex-direction: column;
@@ -432,7 +547,8 @@ body.zoom-active .page img {
 
     height: 36px;
 
-    border: 3px solid #444;
+    border:
+        3px solid #444;
 
     border-top-color: #fff;
 
@@ -452,11 +568,15 @@ body.zoom-active .page img {
 @keyframes spin {
 
     from {
-        transform: rotate(0deg);
+
+        transform:
+            rotate(0deg);
     }
 
     to {
-        transform: rotate(360deg);
+
+        transform:
+            rotate(360deg);
     }
 
 }
@@ -473,7 +593,8 @@ body.zoom-active .page img {
 
     max-width: 500px;
 
-    margin: 60px auto;
+    margin:
+        60px auto;
 
     padding: 28px;
 
@@ -481,7 +602,8 @@ body.zoom-active .page img {
 
     background: #1d1d1d;
 
-    border: 1px solid #444;
+    border:
+        1px solid #444;
 
     border-radius: 16px;
 
@@ -569,7 +691,11 @@ body.zoom-active .page img {
 
     left: 50%;
 
-    bottom: 14px;
+    /*
+       Safe area bawah
+    */
+    bottom:
+        calc(14px + env(safe-area-inset-bottom));
 
     transform:
         translateX(-50%);
@@ -671,9 +797,11 @@ body.zoom-active .page img {
 
     position: fixed;
 
-    right: 15px;
+    right:
+        calc(15px + env(safe-area-inset-right));
 
-    bottom: 72px;
+    bottom:
+        calc(72px + env(safe-area-inset-bottom));
 
     z-index: 1100;
 
@@ -867,7 +995,8 @@ body.zoom-active .page img {
 
     justify-content: center;
 
-    padding: 20px;
+    padding:
+        20px;
 
     background:
         rgba(0,0,0,0.72);
@@ -898,7 +1027,8 @@ body.zoom-active .page img {
 
     background: #202020;
 
-    border: 1px solid #3b3b3b;
+    border:
+        1px solid #3b3b3b;
 
     box-shadow:
         0 20px 60px
@@ -1041,7 +1171,8 @@ body.light-theme .reader-header {
     background:
         rgba(245,245,245,0.96);
 
-    border-bottom-color: #d4d4d4;
+    border-bottom-color:
+        #d4d4d4;
 }
 
 
@@ -1166,6 +1297,16 @@ body.light-theme .page-counter-button:hover {
     }
 
 
+    #reader {
+
+        min-height:
+            calc(100vh - 52px);
+
+        min-height:
+            calc(100dvh - 52px);
+    }
+
+
     .header-button {
 
         width: 34px;
@@ -1208,14 +1349,18 @@ body.light-theme .page-counter-button:hover {
         width: 100%;
 
         max-width: 100%;
+
+        height: auto;
     }
 
 
     .floating-controls {
 
-        right: 10px;
+        right:
+            calc(10px + env(safe-area-inset-right));
 
-        bottom: 64px;
+        bottom:
+            calc(64px + env(safe-area-inset-bottom));
     }
 
 
@@ -1235,7 +1380,8 @@ body.light-theme .page-counter-button:hover {
 
     .page-counter-container {
 
-        bottom: 9px;
+        bottom:
+            calc(9px + env(safe-area-inset-bottom));
     }
 
 
@@ -1248,6 +1394,89 @@ body.light-theme .page-counter-button:hover {
     .page-counter-button {
 
         min-width: 72px;
+    }
+
+}
+
+
+/* =========================================================
+   VERY SMALL SCREEN
+========================================================= */
+
+@media (max-width: 360px) {
+
+    .header-left {
+
+        gap: 6px;
+    }
+
+
+    .brand {
+
+        font-size: 12px;
+    }
+
+
+    #readerStatus {
+
+        max-width: 140px;
+    }
+
+
+    .logout-button {
+
+        padding:
+            0 8px;
+
+        font-size: 10px;
+    }
+
+
+    .page-counter-button {
+
+        min-width: 65px;
+    }
+
+}
+
+
+/* =========================================================
+   LANDSCAPE MOBILE
+========================================================= */
+
+@media (orientation: landscape) and (max-height: 600px) {
+
+    .reader-header {
+
+        min-height: 46px;
+
+        padding:
+            5px 9px;
+    }
+
+
+    .header-button {
+
+        width: 32px;
+
+        height: 32px;
+    }
+
+
+    #reader {
+
+        min-height:
+            calc(100vh - 46px);
+
+        min-height:
+            calc(100dvh - 46px);
+    }
+
+
+    .floating-controls {
+
+        bottom:
+            calc(58px + env(safe-area-inset-bottom));
     }
 
 }
@@ -1267,9 +1496,14 @@ body.light-theme .page-counter-button:hover {
 
     * {
 
-        animation-duration: 0.01ms !important;
+        animation-duration:
+            0.01ms !important;
 
-        transition-duration: 0.01ms !important;
+        animation-iteration-count:
+            1 !important;
+
+        transition-duration:
+            0.01ms !important;
     }
 
 }
