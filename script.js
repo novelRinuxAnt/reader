@@ -6,7 +6,7 @@
 ========================================= */
 
 const API_URL =
-    "https://script.google.com/macros/s/AKfycbyWqoJO_4qoYfFxNshOdd-jtIBfahASiaTmwD7POE56bCu0fBlnKdDpTuwwQPjUq6gOZg/exec";
+    "https://script.google.com/macros/s/AKfycbyIXvAoxY7Vmh3Rb8HdgF2CtIqm97eCoezRp1t5ql53fmotUEl6G-l-txRhoGDtskcsLg/exec";
 
 
 /* =========================================
@@ -61,7 +61,7 @@ document.addEventListener(
 
 
 /* =========================================
-   INITIALIZE READER
+   INITIALIZE
 ========================================= */
 
 function initializeReader() {
@@ -72,20 +72,22 @@ function initializeReader() {
 
 
     /*
-     * Ambil data login dari localStorage.
+     * Login menyimpan session dengan nama:
      *
-     * Kita mendukung beberapa kemungkinan
-     * nama penyimpanan agar kompatibel dengan
-     * sistem login yang sudah ada.
+     * novelReaderSession
+     *
+     * dan bisa berada di:
+     *
+     * localStorage
+     * atau
+     * sessionStorage
      */
 
-    const savedData =
-        localStorage.getItem(
-            "novelReaderData"
-        );
+    const savedSession =
+        getStoredSession();
 
 
-    if (!savedData) {
+    if (!savedSession) {
 
         showError(
             "Data login tidak ditemukan. Silakan login terlebih dahulu."
@@ -96,226 +98,159 @@ function initializeReader() {
     }
 
 
-    try {
+    /*
+     * Pastikan login benar.
+     */
 
-        const loginData =
-            JSON.parse(savedData);
-
-
-        /*
-         * Pastikan username tersedia.
-         */
-
-        const username =
-            loginData.username ||
-            loginData.userName ||
-            loginData.user ||
-            "";
-
-
-        /*
-         * Pastikan password tersedia.
-         */
-
-        const password =
-            loginData.password ||
-            loginData.pass ||
-            "";
-
-
-        if (!username) {
-
-            showError(
-                "Username tidak ditemukan. Silakan login kembali."
-            );
-
-            return;
-
-        }
-
-
-        if (!password) {
-
-            showError(
-                "Password tidak ditemukan. Silakan login kembali."
-            );
-
-            return;
-
-        }
-
-
-        /*
-         * Panggil Google Apps Script.
-         */
-
-        loadReaderFromAPI(
-            username,
-            password
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Data login rusak:",
-            error
-        );
-
+    if (
+        savedSession.loggedIn !== true
+    ) {
 
         showError(
-            "Data login tidak valid. Silakan login kembali."
+            "Session login tidak valid."
         );
 
+        return;
+
     }
+
+
+    /*
+     * Pastikan files tersedia.
+     */
+
+    if (
+        !Array.isArray(
+            savedSession.files
+        )
+    ) {
+
+        showError(
+            "Daftar WebP tidak ditemukan."
+        );
+
+        return;
+
+    }
+
+
+    /*
+     * Simpan ke readerData.
+     */
+
+    readerData =
+        savedSession;
+
+
+    /*
+     * Urutkan WebP.
+     */
+
+    pages =
+        sortPages(
+            readerData.files
+        );
+
+
+    /*
+     * Pastikan ada halaman.
+     */
+
+    if (
+        pages.length === 0
+    ) {
+
+        showError(
+            "Tidak ada halaman WebP."
+        );
+
+        return;
+
+    }
+
+
+    /*
+     * Tampilkan Reader.
+     */
+
+    updateHeader();
+
+    renderPages();
 
 }
 
 
 /* =========================================
-   LOAD READER FROM API
+   GET STORED SESSION
 ========================================= */
 
-async function loadReaderFromAPI(
-    username,
-    password
-) {
+function getStoredSession() {
+
+    /*
+     * Coba localStorage terlebih dahulu.
+     */
+
+    let saved =
+        localStorage.getItem(
+            "novelReaderSession"
+        );
+
+
+    /*
+     * Jika tidak ada,
+     * coba sessionStorage.
+     */
+
+    if (!saved) {
+
+        saved =
+            sessionStorage.getItem(
+                "novelReaderSession"
+            );
+
+    }
+
+
+    /*
+     * Tidak ada session.
+     */
+
+    if (!saved) {
+
+        return null;
+
+    }
+
+
+    /*
+     * Parse JSON.
+     */
 
     try {
 
-        /*
-         * Encode username dan password
-         * agar aman digunakan sebagai URL.
-         */
-
-        const url =
-            API_URL +
-            "?username=" +
-            encodeURIComponent(username) +
-            "&password=" +
-            encodeURIComponent(password);
-
-
-        console.log(
-            "Memanggil Reader API..."
-        );
-
-
-        const response =
-            await fetch(
-                url,
-                {
-                    method: "GET",
-                    cache: "no-store"
-                }
-            );
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                "HTTP " +
-                response.status
-            );
-
-        }
-
-
-        const data =
-            await response.json();
-
-
-        console.log(
-            "Response API:",
-            data
-        );
-
-
-        /*
-         * Periksa success.
-         */
-
-        if (data.success !== true) {
-
-            throw new Error(
-                data.message ||
-                "Login API gagal."
-            );
-
-        }
-
-
-        /*
-         * Pastikan files tersedia.
-         */
-
-        if (
-            !Array.isArray(
-                data.files
-            )
-        ) {
-
-            throw new Error(
-                "Daftar WebP tidak ditemukan dari API."
-            );
-
-        }
-
-
-        /*
-         * Simpan data Reader.
-         */
-
-        readerData =
-            data;
-
-
-        /*
-         * Urutkan halaman.
-         */
-
-        pages =
-            sortPages(
-                data.files
-            );
-
-
-        if (pages.length === 0) {
-
-            throw new Error(
-                "Folder Drive tidak memiliki file WebP."
-            );
-
-        }
-
-
-        /*
-         * Update tampilan.
-         */
-
-        updateHeader();
-
-        renderPages();
-
-
-        console.log(
-            "Reader berhasil dimuat:",
-            pages.length,
-            "halaman"
+        return JSON.parse(
+            saved
         );
 
     } catch (error) {
 
         console.error(
-            "Reader API Error:",
+            "Session Reader rusak:",
             error
         );
 
 
-        showError(
-            "Gagal memuat Reader: " +
-            error.message
+        localStorage.removeItem(
+            "novelReaderSession"
         );
+
+
+        sessionStorage.removeItem(
+            "novelReaderSession"
+        );
+
+
+        return null;
 
     }
 
@@ -355,9 +290,7 @@ function sortPages(files) {
    GET PAGE NUMBER
 ========================================= */
 
-function getPageNumber(
-    filename
-) {
+function getPageNumber(filename) {
 
     if (!filename) {
 
@@ -365,16 +298,6 @@ function getPageNumber(
 
     }
 
-
-    /*
-     * Contoh:
-     *
-     * page-0256.webp
-     *
-     * menjadi:
-     *
-     * 256
-     */
 
     const match =
         filename.match(
@@ -451,10 +374,6 @@ function renderPages() {
     updatePageCounter();
 
 
-    /*
-     * Scroll ke halaman pertama.
-     */
-
     window.scrollTo(
         0,
         0
@@ -493,7 +412,8 @@ function createPage(
 
 
     /*
-     * URL WebP dari Apps Script.
+     * URL WebP yang diberikan
+     * Google Apps Script.
      */
 
     img.src =
@@ -507,8 +427,8 @@ function createPage(
 
 
     /*
-     * Tiga halaman pertama
-     * dimuat langsung.
+     * Beberapa halaman pertama
+     * langsung dimuat.
      */
 
     img.loading =
@@ -522,23 +442,14 @@ function createPage(
 
 
     /*
-     * Tambahkan title.
-     */
-
-    img.title =
-        file.name ||
-        "";
-
-
-    /*
-     * Jika gambar berhasil dimuat.
+     * Jika gambar berhasil.
      */
 
     img.onload =
         function() {
 
             console.log(
-                "Loaded:",
+                "WebP loaded:",
                 file.name
             );
 
@@ -546,14 +457,14 @@ function createPage(
 
 
     /*
-     * Jika gambar gagal dimuat.
+     * Jika gambar gagal.
      */
 
     img.onerror =
         function() {
 
             console.error(
-                "Gagal memuat gambar:",
+                "Gagal memuat:",
                 file.name,
                 file.url
             );
@@ -567,10 +478,6 @@ function createPage(
                 document.createElement(
                     "div"
                 );
-
-
-            error.className =
-                "page-error";
 
 
             error.style.padding =
@@ -730,49 +637,76 @@ window.addEventListener(
    BACK
 ========================================= */
 
-backButton.addEventListener(
-    "click",
-    function() {
+if (backButton) {
 
-        window.location.href =
-            "https://novelrinuxant.github.io/login/";
+    backButton.addEventListener(
+        "click",
+        function() {
 
-    }
-);
+            window.location.href =
+                "https://novelrinuxant.github.io/login/";
+
+        }
+    );
+
+}
 
 
 /* =========================================
    LOGOUT
 ========================================= */
 
-logoutButton.addEventListener(
-    "click",
-    function() {
+if (logoutButton) {
 
-        localStorage.removeItem(
-            "novelReaderData"
-        );
+    logoutButton.addEventListener(
+        "click",
+        function() {
+
+            localStorage.removeItem(
+                "novelReaderSession"
+            );
 
 
-        window.location.href =
-            "https://novelrinuxant.github.io/login/";
+            sessionStorage.removeItem(
+                "novelReaderSession"
+            );
 
-    }
-);
+
+            localStorage.removeItem(
+                "novelReaderData"
+            );
+
+
+            sessionStorage.removeItem(
+                "novelReaderData"
+            );
+
+
+            window.location.href =
+                "https://novelrinuxant.github.io/login/";
+
+        }
+    );
+
+}
 
 
 /* =========================================
    RETRY
 ========================================= */
 
-retryButton.addEventListener(
-    "click",
-    function() {
+if (retryButton) {
 
-        initializeReader();
+    retryButton.addEventListener(
+        "click",
+        function() {
 
-    }
-);
+            initializeReader();
+
+        }
+    );
+
+}
 
 
 /* =========================================
@@ -781,16 +715,24 @@ retryButton.addEventListener(
 
 function showLoading() {
 
-    loading.style.display =
-        "";
+    if (loading) {
+
+        loading.style.display =
+            "";
+
+    }
 
 }
 
 
 function hideLoading() {
 
-    loading.style.display =
-        "none";
+    if (loading) {
+
+        loading.style.display =
+            "none";
+
+    }
 
 }
 
@@ -799,30 +741,44 @@ function hideLoading() {
    ERROR
 ========================================= */
 
-function showError(
-    message
-) {
+function showError(message) {
 
     hideLoading();
 
 
-    pagesContainer.innerHTML =
-        "";
+    if (pagesContainer) {
+
+        pagesContainer.innerHTML =
+            "";
+
+    }
 
 
-    errorMessage.textContent =
-        message;
+    if (errorMessage) {
+
+        errorMessage.textContent =
+            message;
+
+    }
 
 
-    errorBox.hidden =
-        false;
+    if (errorBox) {
+
+        errorBox.hidden =
+            false;
+
+    }
 
 }
 
 
 function hideError() {
 
-    errorBox.hidden =
-        true;
+    if (errorBox) {
+
+        errorBox.hidden =
+            true;
+
+    }
 
 }
