@@ -392,7 +392,9 @@ function createPage(
      */
 
     img.src =
-        file.url;
+        "https://drive.google.com/uc?id=" +
+       encodeURIComponent(file.id) +
+       "&export=download";
 
 
     img.alt =
