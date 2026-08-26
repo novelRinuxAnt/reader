@@ -5,55 +5,90 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>Novel Reader</title>
+    <title>Novel RINU'XANT Reader</title>
 
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
     <header class="reader-header">
 
         <div class="header-left">
-            <button id="backButton" class="header-button">
+
+            <button id="backButton"
+                    class="header-button"
+                    type="button"
+                    aria-label="Kembali">
                 ←
             </button>
 
-            <div>
+            <div class="header-info">
+
                 <div class="brand">
-                    Novel RinuxAnt
+                    Novel RINU'XANT
                 </div>
 
                 <div id="readerStatus">
                     Memuat novel...
                 </div>
+
             </div>
+
         </div>
 
-        <button id="logoutButton"
-                class="header-button logout-button">
-            Keluar
-        </button>
+
+        <div class="header-right">
+
+            <button id="logoutButton"
+                    class="header-button logout-button"
+                    type="button">
+                Keluar
+            </button>
+
+        </div>
 
     </header>
 
 
+    <!-- =====================================================
+         READER
+    ====================================================== -->
+
     <main id="reader">
 
-        <div id="loading" class="loading">
+
+        <!-- =================================================
+             LOADING
+        ================================================== -->
+
+        <div id="loading"
+             class="loading">
 
             <div class="loading-spinner"></div>
 
-            <div>
+            <div class="loading-text">
                 Memuat halaman...
             </div>
 
         </div>
 
 
+        <!-- =================================================
+             ERROR
+        ================================================== -->
+
         <div id="errorBox"
              class="error-box"
              hidden>
+
+            <div class="error-icon">
+                !
+            </div>
 
             <div class="error-title">
                 Gagal memuat Reader
@@ -64,28 +99,291 @@
             </div>
 
             <button id="retryButton"
-                    class="retry-button">
+                    class="retry-button"
+                    type="button">
                 Coba Lagi
             </button>
 
         </div>
 
 
+        <!-- =================================================
+             PAGES
+        ================================================== -->
+
         <div id="pages"
              class="pages">
         </div>
 
+
     </main>
 
 
-    <footer class="reader-footer">
+    <!-- =====================================================
+         PAGE COUNTER
+    ====================================================== -->
 
-        <span id="pageCounter">
+    <div class="page-counter-container">
+
+        <button id="previousPageButton"
+                class="page-nav-button"
+                type="button"
+                aria-label="Halaman sebelumnya">
+            ‹
+        </button>
+
+
+        <button id="pageCounter"
+                class="page-counter-button"
+                type="button">
             0 / 0
-        </span>
+        </button>
 
-    </footer>
 
+        <button id="nextPageButton"
+                class="page-nav-button"
+                type="button"
+                aria-label="Halaman berikutnya">
+            ›
+        </button>
+
+    </div>
+
+
+    <!-- =====================================================
+         FLOATING MENU
+    ====================================================== -->
+
+    <div id="floatingControls"
+         class="floating-controls">
+
+
+        <!-- MENU TOGGLE -->
+
+        <button id="controlToggle"
+                class="floating-main-button"
+                type="button"
+                aria-label="Buka kontrol Reader"
+                aria-expanded="false">
+            ☰
+        </button>
+
+
+        <!-- MENU -->
+
+        <div id="controlMenu"
+             class="control-menu"
+             hidden>
+
+
+            <!-- SOUNDTRACK -->
+
+            <button id="soundtrackButton"
+                    class="control-button"
+                    type="button">
+
+                <span class="control-icon">
+                    ♪
+                </span>
+
+                <span class="control-label">
+                    Soundtrack
+                </span>
+
+                <span id="soundtrackState"
+                      class="control-state">
+                    OFF
+                </span>
+
+            </button>
+
+
+            <!-- ZOOM OUT -->
+
+            <button id="zoomOutButton"
+                    class="control-button"
+                    type="button">
+
+                <span class="control-icon">
+                    −
+                </span>
+
+                <span class="control-label">
+                    Zoom Out
+                </span>
+
+                <span id="zoomValueOut"
+                      class="control-state">
+                    100%
+                </span>
+
+            </button>
+
+
+            <!-- ZOOM IN -->
+
+            <button id="zoomInButton"
+                    class="control-button"
+                    type="button">
+
+                <span class="control-icon">
+                    +
+                </span>
+
+                <span class="control-label">
+                    Zoom In
+                </span>
+
+                <span id="zoomValueIn"
+                      class="control-state">
+                    100%
+                </span>
+
+            </button>
+
+
+            <!-- RESET ZOOM -->
+
+            <button id="resetZoomButton"
+                    class="control-button"
+                    type="button">
+
+                <span class="control-icon">
+                    1:1
+                </span>
+
+                <span class="control-label">
+                    Reset Zoom
+                </span>
+
+            </button>
+
+
+            <!-- GO TO PAGE -->
+
+            <button id="goToPageButton"
+                    class="control-button"
+                    type="button">
+
+                <span class="control-icon">
+                    #
+                </span>
+
+                <span class="control-label">
+                    Ke Halaman
+                </span>
+
+            </button>
+
+
+            <!-- FULLSCREEN -->
+
+            <button id="fullscreenButton"
+                    class="control-button"
+                    type="button">
+
+                <span class="control-icon">
+                    ⛶
+                </span>
+
+                <span class="control-label">
+                    Fullscreen
+                </span>
+
+            </button>
+
+
+            <!-- THEME -->
+
+            <button id="themeButton"
+                    class="control-button"
+                    type="button">
+
+                <span id="themeIcon"
+                      class="control-icon">
+                    ☀
+                </span>
+
+                <span class="control-label">
+                    Tema
+                </span>
+
+                <span id="themeState"
+                      class="control-state">
+                    DARK
+                </span>
+
+            </button>
+
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         GO TO PAGE DIALOG
+    ====================================================== -->
+
+    <div id="pageDialog"
+         class="dialog-overlay"
+         hidden>
+
+        <div class="page-dialog">
+
+            <div class="dialog-title">
+                Pergi ke halaman
+            </div>
+
+            <div class="dialog-subtitle">
+                Masukkan nomor halaman
+            </div>
+
+            <input id="pageInput"
+                   class="page-input"
+                   type="number"
+                   min="1"
+                   inputmode="numeric"
+                   placeholder="Contoh: 125">
+
+
+            <div class="dialog-buttons">
+
+                <button id="pageCancelButton"
+                        class="dialog-button secondary"
+                        type="button">
+                    Batal
+                </button>
+
+                <button id="pageGoButton"
+                        class="dialog-button primary"
+                        type="button">
+                    Buka
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         YOUTUBE PLAYER
+    ====================================================== -->
+
+    <div id="youtubePlayerContainer"
+         class="youtube-player-container"
+         aria-hidden="true">
+
+        <div id="youtubePlayer"></div>
+
+    </div>
+
+
+    <!-- =====================================================
+         SCRIPT
+    ====================================================== -->
 
     <script src="script.js"></script>
 
