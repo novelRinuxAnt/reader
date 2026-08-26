@@ -3,8 +3,8 @@
 /* =========================================================
    NOVEL RINU'XANT
    READER
-   VERSION 3.0 FINAL
-   GOOGLE DRIVE THUMBNAIL ENGINE
+   VERSION 4.0 FINAL
+   GOOGLE DRIVE + READER CONTROLS
    ========================================================= */
 
 
@@ -12,37 +12,46 @@
    CONFIGURATION
 ========================================================= */
 
-/*
- * URL gambar Google Drive yang TERBUKTI berhasil
- * menampilkan WebP di browser.
- *
- * Jangan gunakan /uc?export=download
- */
-
 const DRIVE_IMAGE_URL =
     "https://drive.google.com/thumbnail?id=";
 
-
-/*
- * Ukuran gambar.
- *
- * w2000 = lebar maksimal 2000 pixel.
- */
-
 const DRIVE_IMAGE_SIZE =
     "&sz=w2000";
-
-
-/*
- * Halaman login.
- */
 
 const LOGIN_URL =
     "https://novelrinuxant.github.io/login/";
 
 
+/*
+ * YouTube Soundtrack
+ *
+ * Video ID:
+ * 7qs6RwB9Jp0
+ */
+
+const YOUTUBE_VIDEO_ID =
+    "7qs6RwB9Jp0";
+
+
+/*
+ * Zoom
+ */
+
+const ZOOM_MIN =
+    50;
+
+const ZOOM_MAX =
+    200;
+
+const ZOOM_STEP =
+    10;
+
+let currentZoom =
+    100;
+
+
 /* =========================================================
-   ELEMENT
+   ELEMENTS
 ========================================================= */
 
 const pagesContainer =
@@ -73,6 +82,109 @@ const pageCounter =
     document.getElementById("pageCounter");
 
 
+/*
+ * Floating menu
+ */
+
+const controlToggle =
+    document.getElementById("controlToggle");
+
+const controlMenu =
+    document.getElementById("controlMenu");
+
+
+/*
+ * Controls
+ */
+
+const soundtrackButton =
+    document.getElementById("soundtrackButton");
+
+const soundtrackState =
+    document.getElementById("soundtrackState");
+
+const zoomOutButton =
+    document.getElementById("zoomOutButton");
+
+const zoomInButton =
+    document.getElementById("zoomInButton");
+
+const resetZoomButton =
+    document.getElementById("resetZoomButton");
+
+const zoomValueOut =
+    document.getElementById("zoomValueOut");
+
+const zoomValueIn =
+    document.getElementById("zoomValueIn");
+
+const goToPageButton =
+    document.getElementById("goToPageButton");
+
+const fullscreenButton =
+    document.getElementById("fullscreenButton");
+
+const themeButton =
+    document.getElementById("themeButton");
+
+const themeIcon =
+    document.getElementById("themeIcon");
+
+const themeState =
+    document.getElementById("themeState");
+
+
+/*
+ * Page navigation
+ */
+
+const previousPageButton =
+    document.getElementById(
+        "previousPageButton"
+    );
+
+const nextPageButton =
+    document.getElementById(
+        "nextPageButton"
+    );
+
+
+/*
+ * Page dialog
+ */
+
+const pageDialog =
+    document.getElementById("pageDialog");
+
+const pageInput =
+    document.getElementById("pageInput");
+
+const pageCancelButton =
+    document.getElementById(
+        "pageCancelButton"
+    );
+
+const pageGoButton =
+    document.getElementById(
+        "pageGoButton"
+    );
+
+
+/*
+ * YouTube
+ */
+
+const youtubePlayerContainer =
+    document.getElementById(
+        "youtubePlayerContainer"
+    );
+
+const youtubePlayer =
+    document.getElementById(
+        "youtubePlayer"
+    );
+
+
 /* =========================================================
    DATA
 ========================================================= */
@@ -82,6 +194,15 @@ let readerData =
 
 let pages =
     [];
+
+let currentPage =
+    1;
+
+let youtubeIframe =
+    null;
+
+let soundtrackPlaying =
+    false;
 
 
 /* =========================================================
@@ -95,20 +216,18 @@ document.addEventListener(
 
 
 /* =========================================================
-   INITIALIZE READER
+   INITIALIZE
 ========================================================= */
 
 function initializeReader() {
 
     console.log(
-        "Novel Reader: initializing..."
+        "Novel RINU'XANT Reader initializing..."
     );
 
 
     /*
-     * ======================================================
-     * 1. Coba novelReaderSession
-     * ======================================================
+     * Session utama
      */
 
     let savedData =
@@ -116,6 +235,10 @@ function initializeReader() {
             "novelReaderSession"
         );
 
+
+    /*
+     * Session sementara
+     */
 
     if (!savedData) {
 
@@ -128,9 +251,7 @@ function initializeReader() {
 
 
     /*
-     * ======================================================
-     * 2. Jika tidak ada, coba novelReaderData
-     * ======================================================
+     * Kompatibilitas
      */
 
     if (!savedData) {
@@ -154,22 +275,14 @@ function initializeReader() {
 
 
     /*
-     * ======================================================
      * Tidak ada session
-     * ======================================================
      */
 
     if (!savedData) {
 
-        console.error(
-            "Novel Reader: session tidak ditemukan."
-        );
-
-
         showError(
             "Data login tidak ditemukan. Silakan login terlebih dahulu."
         );
-
 
         return;
 
@@ -177,9 +290,7 @@ function initializeReader() {
 
 
     /*
-     * ======================================================
-     * PARSE JSON
-     * ======================================================
+     * Parse
      */
 
     try {
@@ -192,7 +303,7 @@ function initializeReader() {
     } catch (error) {
 
         console.error(
-            "Session Reader rusak:",
+            "Session rusak:",
             error
         );
 
@@ -211,9 +322,14 @@ function initializeReader() {
 
 
     /*
-     * ======================================================
-     * LOAD READER
-     * ======================================================
+     * Inisialisasi UI
+     */
+
+    initializeControls();
+
+
+    /*
+     * Load reader
      */
 
     loadReader();
@@ -233,17 +349,10 @@ function loadReader() {
             "Data Reader tidak tersedia."
         );
 
-
         return;
 
     }
 
-
-    /*
-     * ======================================================
-     * CEK LOGIN
-     * ======================================================
-     */
 
     if (
         readerData.loggedIn !== true
@@ -253,17 +362,10 @@ function loadReader() {
             "Sesi login tidak valid."
         );
 
-
         return;
 
     }
 
-
-    /*
-     * ======================================================
-     * CEK FILES
-     * ======================================================
-     */
 
     if (
         !Array.isArray(
@@ -274,7 +376,6 @@ function loadReader() {
         showError(
             "Daftar WebP tidak ditemukan."
         );
-
 
         return;
 
@@ -289,17 +390,10 @@ function loadReader() {
             "Tidak ada halaman WebP."
         );
 
-
         return;
 
     }
 
-
-    /*
-     * ======================================================
-     * SORT
-     * ======================================================
-     */
 
     pages =
         sortPages(
@@ -307,13 +401,7 @@ function loadReader() {
         );
 
 
-    /*
-     * ======================================================
-     * CEK ID FILE
-     * ======================================================
-     */
-
-    const validPages =
+    pages =
         pages.filter(
             function(file) {
 
@@ -326,55 +414,22 @@ function loadReader() {
         );
 
 
-    if (
-        validPages.length === 0
-    ) {
+    if (!pages.length) {
 
         showError(
             "ID file WebP tidak ditemukan."
         );
-
 
         return;
 
     }
 
 
-    /*
-     * Gunakan hanya file yang
-     * mempunyai ID Google Drive.
-     */
+    currentPage =
+        1;
 
-    pages =
-        validPages;
-
-
-    console.log(
-        "Novel Reader:",
-        {
-            username:
-                readerData.username,
-
-            total:
-                pages.length
-        }
-    );
-
-
-    /*
-     * ======================================================
-     * HEADER
-     * ======================================================
-     */
 
     updateHeader();
-
-
-    /*
-     * ======================================================
-     * RENDER
-     * ======================================================
- */
 
     renderPages();
 
@@ -382,12 +437,10 @@ function loadReader() {
 
 
 /* =========================================================
-   SORT PAGE
+   SORT
 ========================================================= */
 
-function sortPages(
-    files
-) {
+function sortPages(files) {
 
     return [...files].sort(
         function(a, b) {
@@ -404,12 +457,10 @@ function sortPages(
 
 
 /* =========================================================
-   GET PAGE NUMBER
+   PAGE NUMBER
 ========================================================= */
 
-function getPageNumber(
-    filename
-) {
+function getPageNumber(filename) {
 
     if (!filename) {
 
@@ -440,26 +491,14 @@ function getPageNumber(
 
 
 /* =========================================================
-   CREATE DRIVE IMAGE URL
+   DRIVE IMAGE URL
 ========================================================= */
 
-function createDriveImageUrl(
-    fileId
-) {
-
-    /*
-     * ======================================================
-     * URL FINAL
-     *
-     * https://drive.google.com/thumbnail?id=FILE_ID&sz=w2000
-     * ======================================================
-     */
+function createDriveImageUrl(fileId) {
 
     return (
         DRIVE_IMAGE_URL +
-        encodeURIComponent(
-            fileId
-        ) +
+        encodeURIComponent(fileId) +
         DRIVE_IMAGE_SIZE
     );
 
@@ -487,19 +526,13 @@ function updateHeader() {
     }
 
 
-    if (pageCounter) {
-
-        pageCounter.textContent =
-            "1 / " +
-            pages.length;
-
-    }
+    updatePageCounter();
 
 }
 
 
 /* =========================================================
-   RENDER PAGES
+   RENDER
 ========================================================= */
 
 function renderPages() {
@@ -511,27 +544,14 @@ function renderPages() {
 
     if (!pagesContainer) {
 
-        console.error(
-            "Element #pages tidak ditemukan."
-        );
-
-
         return;
 
     }
 
 
-    /*
-     * Bersihkan halaman lama.
-     */
-
     pagesContainer.innerHTML =
         "";
 
-
-    /*
-     * Buat seluruh halaman.
-     */
 
     pages.forEach(
         function(file, index) {
@@ -544,6 +564,8 @@ function renderPages() {
         }
     );
 
+
+    applyZoom();
 
     updatePageCounter();
 
@@ -573,34 +595,11 @@ function createPage(
         index + 1;
 
 
-    /*
-     * ======================================================
-     * IMAGE
-     * ======================================================
-     */
-
     const img =
         document.createElement(
             "img"
         );
 
-
-    /*
-     * ======================================================
-     * BUAT URL THUMBNAIL
-     * ======================================================
-     *
-     * INI BAGIAN PALING PENTING.
-     *
-     * Tidak menggunakan:
-     *
-     * /uc?id=...&export=download
-     *
-     * Tetapi menggunakan:
-     *
-     * /thumbnail?id=...&sz=w2000
-     *
-     */
 
     const imageUrl =
         createDriveImageUrl(
@@ -608,45 +607,15 @@ function createPage(
         );
 
 
-    /*
-     * Simpan URL untuk debugging.
-     */
-
-    img.dataset.driveId =
-        file.id;
-
-
-    img.dataset.imageUrl =
-        imageUrl;
-
-
-    /*
-     * ======================================================
-     * SRC
-     * ======================================================
-     */
-
     img.src =
         imageUrl;
 
-
-    /*
-     * ======================================================
-     * ALT
-     * ======================================================
-     */
 
     img.alt =
         file.name ||
         "Halaman " +
         (index + 1);
 
-
-    /*
-     * ======================================================
-     * LAZY LOADING
-     * ======================================================
-     */
 
     img.loading =
         index < 3
@@ -658,10 +627,20 @@ function createPage(
         "async";
 
 
+    img.draggable =
+        false;
+
+
+    img.dataset.driveId =
+        file.id;
+
+
+    img.dataset.imageUrl =
+        imageUrl;
+
+
     /*
-     * ======================================================
      * SUCCESS
-     * ======================================================
      */
 
     img.onload =
@@ -672,46 +651,23 @@ function createPage(
             );
 
 
-            /*
-             * Setelah gambar berhasil,
-             * update counter.
-             */
-
             updatePageCounter();
 
         };
 
 
     /*
-     * ======================================================
      * ERROR
-     * ======================================================
      */
 
     img.onerror =
         function() {
 
             console.error(
-                "Gagal memuat WebP:",
-                {
-                    name:
-                        file.name,
-
-                    id:
-                        file.id,
-
-                    url:
-                        imageUrl
-                }
+                "Gagal memuat:",
+                file.name,
+                imageUrl
             );
-
-
-            /*
-             * Jangan menggunakan file.url
-             * lagi.
-             *
-             * Kita hanya menggunakan file.id.
-             */
 
 
             img.style.display =
@@ -744,12 +700,6 @@ function createPage(
         };
 
 
-    /*
-     * ======================================================
-     * APPEND
-     * ======================================================
-     */
-
     page.appendChild(
         img
     );
@@ -768,15 +718,29 @@ function createPage(
 
 function updatePageCounter() {
 
-    if (
-        !pages.length ||
-        !pageCounter
-    ) {
+    if (!pageCounter || !pages.length) {
 
         return;
 
     }
 
+
+    pageCounter.textContent =
+        currentPage +
+        " / " +
+        pages.length;
+
+
+    updateNavigationButtons();
+
+}
+
+
+/* =========================================================
+   DETECT CURRENT PAGE
+========================================================= */
+
+function detectCurrentPage() {
 
     const pageElements =
         document.querySelectorAll(
@@ -784,9 +748,7 @@ function updatePageCounter() {
         );
 
 
-    if (
-        !pageElements.length
-    ) {
+    if (!pageElements.length) {
 
         return;
 
@@ -797,7 +759,7 @@ function updatePageCounter() {
         window.innerHeight / 2;
 
 
-    let currentPage =
+    let closestPage =
         1;
 
 
@@ -812,11 +774,6 @@ function updatePageCounter() {
                 page.getBoundingClientRect();
 
 
-            /*
-             * Jika halaman belum punya
-             * ukuran, jangan dipakai.
-             */
-
             if (
                 rect.height <= 0
             ) {
@@ -826,14 +783,14 @@ function updatePageCounter() {
             }
 
 
-            const pageCenter =
+            const center =
                 rect.top +
                 rect.height / 2;
 
 
             const distance =
                 Math.abs(
-                    pageCenter -
+                    center -
                     viewportCenter
                 );
 
@@ -847,7 +804,7 @@ function updatePageCounter() {
                     distance;
 
 
-                currentPage =
+                closestPage =
                     index + 1;
 
             }
@@ -856,10 +813,11 @@ function updatePageCounter() {
     );
 
 
-    pageCounter.textContent =
-        currentPage +
-        " / " +
-        pages.length;
+    currentPage =
+        closestPage;
+
+
+    updatePageCounter();
 
 }
 
@@ -887,7 +845,7 @@ window.addEventListener(
             requestAnimationFrame(
                 function() {
 
-                    updatePageCounter();
+                    detectCurrentPage();
 
 
                     scrollTimer =
@@ -904,20 +862,1281 @@ window.addEventListener(
 
 
 /* =========================================================
-   RESIZE
+   GO TO PAGE
 ========================================================= */
 
-window.addEventListener(
-    "resize",
+function goToPage(pageNumber) {
+
+    if (!pages.length) {
+
+        return;
+
+    }
+
+
+    let target =
+        parseInt(
+            pageNumber,
+            10
+        );
+
+
+    if (
+        isNaN(target)
+    ) {
+
+        return;
+
+    }
+
+
+    if (target < 1) {
+
+        target =
+            1;
+
+    }
+
+
+    if (
+        target > pages.length
+    ) {
+
+        target =
+            pages.length;
+
+    }
+
+
+    const page =
+        document.querySelector(
+            '.page[data-page="' +
+            target +
+            '"]'
+        );
+
+
+    if (!page) {
+
+        return;
+
+    }
+
+
+    currentPage =
+        target;
+
+
+    page.scrollIntoView(
+        {
+            behavior: "smooth",
+            block: "start"
+        }
+    );
+
+
+    updatePageCounter();
+
+}
+
+
+/* =========================================================
+   PREVIOUS PAGE
+========================================================= */
+
+function previousPage() {
+
+    detectCurrentPage();
+
+
+    if (
+        currentPage <= 1
+    ) {
+
+        goToPage(1);
+
+        return;
+
+    }
+
+
+    goToPage(
+        currentPage - 1
+    );
+
+}
+
+
+/* =========================================================
+   NEXT PAGE
+========================================================= */
+
+function nextPage() {
+
+    detectCurrentPage();
+
+
+    if (
+        currentPage >= pages.length
+    ) {
+
+        goToPage(
+            pages.length
+        );
+
+        return;
+
+    }
+
+
+    goToPage(
+        currentPage + 1
+    );
+
+}
+
+
+/* =========================================================
+   NAVIGATION BUTTON STATE
+========================================================= */
+
+function updateNavigationButtons() {
+
+    if (previousPageButton) {
+
+        previousPageButton.disabled =
+            currentPage <= 1;
+
+    }
+
+
+    if (nextPageButton) {
+
+        nextPageButton.disabled =
+            currentPage >= pages.length;
+
+    }
+
+}
+
+
+/* =========================================================
+   FLOATING MENU
+========================================================= */
+
+function initializeControls() {
+
+    /*
+     * MENU TOGGLE
+     */
+
+    if (controlToggle) {
+
+        controlToggle.addEventListener(
+            "click",
+            toggleControlMenu
+        );
+
+    }
+
+
+    /*
+     * SOUNDTRACK
+     */
+
+    if (soundtrackButton) {
+
+        soundtrackButton.addEventListener(
+            "click",
+            toggleSoundtrack
+        );
+
+    }
+
+
+    /*
+     * ZOOM OUT
+     */
+
+    if (zoomOutButton) {
+
+        zoomOutButton.addEventListener(
+            "click",
+            function() {
+
+                changeZoom(
+                    -ZOOM_STEP
+                );
+
+            }
+        );
+
+    }
+
+
+    /*
+     * ZOOM IN
+     */
+
+    if (zoomInButton) {
+
+        zoomInButton.addEventListener(
+            "click",
+            function() {
+
+                changeZoom(
+                    ZOOM_STEP
+                );
+
+            }
+        );
+
+    }
+
+
+    /*
+     * RESET ZOOM
+     */
+
+    if (resetZoomButton) {
+
+        resetZoomButton.addEventListener(
+            "click",
+            function() {
+
+                currentZoom =
+                    100;
+
+                applyZoom();
+
+            }
+        );
+
+    }
+
+
+    /*
+     * GO TO PAGE
+     */
+
+    if (goToPageButton) {
+
+        goToPageButton.addEventListener(
+            "click",
+            openPageDialog
+        );
+
+    }
+
+
+    /*
+     * FULLSCREEN
+     */
+
+    if (fullscreenButton) {
+
+        fullscreenButton.addEventListener(
+            "click",
+            toggleFullscreen
+        );
+
+    }
+
+
+    /*
+     * THEME
+     */
+
+    if (themeButton) {
+
+        themeButton.addEventListener(
+            "click",
+            toggleTheme
+        );
+
+    }
+
+
+    /*
+     * PAGE PREVIOUS
+     */
+
+    if (previousPageButton) {
+
+        previousPageButton.addEventListener(
+            "click",
+            previousPage
+        );
+
+    }
+
+
+    /*
+     * PAGE NEXT
+     */
+
+    if (nextPageButton) {
+
+        nextPageButton.addEventListener(
+            "click",
+            nextPage
+        );
+
+    }
+
+
+    /*
+     * PAGE COUNTER
+     */
+
+    if (pageCounter) {
+
+        pageCounter.addEventListener(
+            "click",
+            openPageDialog
+        );
+
+    }
+
+
+    /*
+     * DIALOG CANCEL
+     */
+
+    if (pageCancelButton) {
+
+        pageCancelButton.addEventListener(
+            "click",
+            closePageDialog
+        );
+
+    }
+
+
+    /*
+     * DIALOG GO
+     */
+
+    if (pageGoButton) {
+
+        pageGoButton.addEventListener(
+            "click",
+            submitPageDialog
+        );
+
+    }
+
+
+    /*
+     * ENTER PAGE
+     */
+
+    if (pageInput) {
+
+        pageInput.addEventListener(
+            "keydown",
+            function(event) {
+
+                if (
+                    event.key === "Enter"
+                ) {
+
+                    submitPageDialog();
+
+                }
+
+
+                if (
+                    event.key === "Escape"
+                ) {
+
+                    closePageDialog();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    /*
+     * Klik luar menu
+     */
+
+    document.addEventListener(
+        "click",
+        function(event) {
+
+            if (!controlMenu ||
+                !controlToggle) {
+
+                return;
+
+            }
+
+
+            if (
+                !controlMenu.contains(
+                    event.target
+                ) &&
+                !controlToggle.contains(
+                    event.target
+                )
+            ) {
+
+                closeControlMenu();
+
+            }
+
+        }
+    );
+
+
+    /*
+     * Keyboard
+     */
+
+    document.addEventListener(
+        "keydown",
+        handleKeyboard
+    );
+
+
+    /*
+     * Theme awal
+     */
+
+    loadTheme();
+
+
+    /*
+     * Zoom awal
+     */
+
+    updateZoomDisplay();
+
+}
+
+
+/* =========================================================
+   CONTROL MENU TOGGLE
+========================================================= */
+
+function toggleControlMenu(event) {
+
+    if (event) {
+
+        event.stopPropagation();
+
+    }
+
+
+    if (!controlMenu) {
+
+        return;
+
+    }
+
+
+    const isOpen =
+        !controlMenu.hidden;
+
+
+    if (isOpen) {
+
+        closeControlMenu();
+
+    } else {
+
+        openControlMenu();
+
+    }
+
+}
+
+
+/* =========================================================
+   OPEN MENU
+========================================================= */
+
+function openControlMenu() {
+
+    if (!controlMenu) {
+
+        return;
+
+    }
+
+
+    controlMenu.hidden =
+        false;
+
+
+    if (controlToggle) {
+
+        controlToggle.classList.add(
+            "active"
+        );
+
+
+        controlToggle.setAttribute(
+            "aria-expanded",
+            "true"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   CLOSE MENU
+========================================================= */
+
+function closeControlMenu() {
+
+    if (!controlMenu) {
+
+        return;
+
+    }
+
+
+    controlMenu.hidden =
+        true;
+
+
+    if (controlToggle) {
+
+        controlToggle.classList.remove(
+            "active"
+        );
+
+
+        controlToggle.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   ZOOM
+========================================================= */
+
+function changeZoom(amount) {
+
+    currentZoom =
+        currentZoom +
+        amount;
+
+
+    if (
+        currentZoom <
+        ZOOM_MIN
+    ) {
+
+        currentZoom =
+            ZOOM_MIN;
+
+    }
+
+
+    if (
+        currentZoom >
+        ZOOM_MAX
+    ) {
+
+        currentZoom =
+            ZOOM_MAX;
+
+    }
+
+
+    applyZoom();
+
+}
+
+
+/* =========================================================
+   APPLY ZOOM
+========================================================= */
+
+function applyZoom() {
+
+    if (!pagesContainer) {
+
+        return;
+
+    }
+
+
+    const images =
+        pagesContainer.querySelectorAll(
+            ".page img"
+        );
+
+
+    images.forEach(
+        function(img) {
+
+            img.style.width =
+                currentZoom + "%";
+
+            img.style.maxWidth =
+                currentZoom > 100
+                    ? "none"
+                    : "100%";
+
+        }
+    );
+
+
+    if (
+        currentZoom !== 100
+    ) {
+
+        document.body.classList.add(
+            "zoom-active"
+        );
+
+    } else {
+
+        document.body.classList.remove(
+            "zoom-active"
+        );
+
+    }
+
+
+    updateZoomDisplay();
+
+}
+
+
+/* =========================================================
+   ZOOM DISPLAY
+========================================================= */
+
+function updateZoomDisplay() {
+
+    const value =
+        currentZoom + "%";
+
+
+    if (zoomValueOut) {
+
+        zoomValueOut.textContent =
+            value;
+
+    }
+
+
+    if (zoomValueIn) {
+
+        zoomValueIn.textContent =
+            value;
+
+    }
+
+}
+
+
+/* =========================================================
+   PAGE DIALOG
+========================================================= */
+
+function openPageDialog() {
+
+    if (!pageDialog) {
+
+        return;
+
+    }
+
+
+    pageDialog.hidden =
+        false;
+
+
+    if (pageInput) {
+
+        pageInput.value =
+            currentPage;
+
+
+        setTimeout(
+            function() {
+
+                pageInput.focus();
+
+                pageInput.select();
+
+            },
+            50
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   CLOSE DIALOG
+========================================================= */
+
+function closePageDialog() {
+
+    if (!pageDialog) {
+
+        return;
+
+    }
+
+
+    pageDialog.hidden =
+        true;
+
+}
+
+
+/* =========================================================
+   SUBMIT PAGE DIALOG
+========================================================= */
+
+function submitPageDialog() {
+
+    if (!pageInput) {
+
+        return;
+
+    }
+
+
+    const target =
+        parseInt(
+            pageInput.value,
+            10
+        );
+
+
+    if (
+        isNaN(target)
+    ) {
+
+        pageInput.focus();
+
+        return;
+
+    }
+
+
+    closePageDialog();
+
+    goToPage(
+        target
+    );
+
+}
+
+
+/* =========================================================
+   FULLSCREEN
+========================================================= */
+
+async function toggleFullscreen() {
+
+    try {
+
+        if (!document.fullscreenElement) {
+
+            await document.documentElement.requestFullscreen();
+
+        } else {
+
+            await document.exitFullscreen();
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Fullscreen error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   THEME
+========================================================= */
+
+function toggleTheme() {
+
+    const isLight =
+        document.body.classList.toggle(
+            "light-theme"
+        );
+
+
+    localStorage.setItem(
+        "novelReaderTheme",
+        isLight
+            ? "light"
+            : "dark"
+    );
+
+
+    updateThemeDisplay();
+
+}
+
+
+/* =========================================================
+   LOAD THEME
+========================================================= */
+
+function loadTheme() {
+
+    const savedTheme =
+        localStorage.getItem(
+            "novelReaderTheme"
+        );
+
+
+    if (
+        savedTheme === "light"
+    ) {
+
+        document.body.classList.add(
+            "light-theme"
+        );
+
+    } else {
+
+        document.body.classList.remove(
+            "light-theme"
+        );
+
+    }
+
+
+    updateThemeDisplay();
+
+}
+
+
+/* =========================================================
+   THEME DISPLAY
+========================================================= */
+
+function updateThemeDisplay() {
+
+    const isLight =
+        document.body.classList.contains(
+            "light-theme"
+        );
+
+
+    if (themeState) {
+
+        themeState.textContent =
+            isLight
+                ? "LIGHT"
+                : "DARK";
+
+    }
+
+
+    if (themeIcon) {
+
+        themeIcon.textContent =
+            isLight
+                ? "☾"
+                : "☀";
+
+    }
+
+}
+
+
+/* =========================================================
+   YOUTUBE API
+========================================================= */
+
+function loadYouTubeAPI() {
+
+    if (
+        document.getElementById(
+            "youtube-api-script"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    const script =
+        document.createElement(
+            "script"
+        );
+
+
+    script.id =
+        "youtube-api-script";
+
+
+    script.src =
+        "https://www.youtube.com/iframe_api";
+
+
+    document.head.appendChild(
+        script
+    );
+
+}
+
+
+/* =========================================================
+   YOUTUBE READY
+========================================================= */
+
+window.onYouTubeIframeAPIReady =
     function() {
 
-        updatePageCounter();
+        console.log(
+            "YouTube API ready."
+        );
 
-    },
-    {
-        passive: true
+    };
+
+
+/* =========================================================
+   CREATE YOUTUBE PLAYER
+========================================================= */
+
+function createYouTubePlayer() {
+
+    if (!youtubePlayer) {
+
+        return;
+
     }
-);
+
+
+    if (youtubeIframe) {
+
+        return;
+
+    }
+
+
+    /*
+     * Gunakan iframe resmi YouTube.
+     *
+     * Playlist berisi video yang sama
+     * agar video dapat diulang terus.
+     */
+
+    youtubeIframe =
+        document.createElement(
+            "iframe"
+        );
+
+
+    youtubeIframe.width =
+        "1";
+
+
+    youtubeIframe.height =
+        "1";
+
+
+    youtubeIframe.src =
+        "https://www.youtube.com/embed/" +
+        YOUTUBE_VIDEO_ID +
+        "?autoplay=1" +
+        "&loop=1" +
+        "&playlist=" +
+        YOUTUBE_VIDEO_ID +
+        "&controls=0" +
+        "&rel=0" +
+        "&playsinline=1";
+
+
+    youtubeIframe.title =
+        "Novel RINU'XANT Soundtrack";
+
+
+    youtubeIframe.allow =
+        "autoplay; encrypted-media";
+
+
+    youtubeIframe.frameBorder =
+        "0";
+
+
+    youtubeIframe.allowFullscreen =
+        false;
+
+
+    youtubePlayer.appendChild(
+        youtubeIframe
+    );
+
+
+    console.log(
+        "YouTube soundtrack created."
+    );
+
+}
+
+
+/* =========================================================
+   SOUNDTRACK
+========================================================= */
+
+function toggleSoundtrack() {
+
+    /*
+     * User harus menekan tombol.
+     *
+     * Ini penting karena browser modern
+     * dapat memblokir autoplay tanpa
+     * interaksi pengguna.
+     */
+
+    if (
+        !soundtrackPlaying
+    ) {
+
+        startSoundtrack();
+
+    } else {
+
+        stopSoundtrack();
+
+    }
+
+}
+
+
+/* =========================================================
+   START SOUNDTRACK
+========================================================= */
+
+function startSoundtrack() {
+
+    if (!youtubePlayer) {
+
+        return;
+
+    }
+
+
+    /*
+     * Buat player baru.
+     */
+
+    youtubePlayer.innerHTML =
+        "";
+
+
+    youtubeIframe =
+        null;
+
+
+    createYouTubePlayer();
+
+
+    soundtrackPlaying =
+        true;
+
+
+    updateSoundtrackDisplay();
+
+
+    console.log(
+        "Soundtrack ON."
+    );
+
+}
+
+
+/* =========================================================
+   STOP SOUNDTRACK
+========================================================= */
+
+function stopSoundtrack() {
+
+    if (youtubePlayer) {
+
+        youtubePlayer.innerHTML =
+            "";
+
+    }
+
+
+    youtubeIframe =
+        null;
+
+
+    soundtrackPlaying =
+        false;
+
+
+    updateSoundtrackDisplay();
+
+
+    console.log(
+        "Soundtrack OFF."
+    );
+
+}
+
+
+/* =========================================================
+   SOUNDTRACK DISPLAY
+========================================================= */
+
+function updateSoundtrackDisplay() {
+
+    if (!soundtrackState) {
+
+        return;
+
+    }
+
+
+    soundtrackState.textContent =
+        soundtrackPlaying
+            ? "ON"
+            : "OFF";
+
+
+    if (soundtrackPlaying) {
+
+        soundtrackButton.classList.add(
+            "active"
+        );
+
+    } else {
+
+        soundtrackButton.classList.remove(
+            "active"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   KEYBOARD
+========================================================= */
+
+function handleKeyboard(event) {
+
+    /*
+     * Jangan menangkap keyboard
+     * ketika sedang mengetik.
+     */
+
+    if (
+        event.target &&
+        (
+            event.target.tagName ===
+            "INPUT" ||
+            event.target.tagName ===
+            "TEXTAREA"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    switch (
+        event.key
+    ) {
+
+        case "ArrowLeft":
+
+            previousPage();
+
+            break;
+
+
+        case "ArrowRight":
+
+            nextPage();
+
+            break;
+
+
+        case "+":
+
+            changeZoom(
+                ZOOM_STEP
+            );
+
+            break;
+
+
+        case "=":
+
+            if (
+                event.shiftKey
+            ) {
+
+                changeZoom(
+                    ZOOM_STEP
+                );
+
+            }
+
+            break;
+
+
+        case "-":
+
+            changeZoom(
+                -ZOOM_STEP
+            );
+
+            break;
+
+
+        case "0":
+
+            currentZoom =
+                100;
+
+            applyZoom();
+
+            break;
+
+
+        case "Escape":
+
+            closePageDialog();
+
+            closeControlMenu();
+
+            break;
+
+    }
+
+}
 
 
 /* =========================================================
@@ -949,8 +2168,23 @@ if (logoutButton) {
         "click",
         function() {
 
+            /*
+             * Matikan soundtrack
+             */
+
+            stopSoundtrack();
+
+
+            /*
+             * Hapus session
+             */
+
             clearSessions();
 
+
+            /*
+             * Kembali login
+             */
 
             window.location.href =
                 LOGIN_URL;
@@ -962,14 +2196,10 @@ if (logoutButton) {
 
 
 /* =========================================================
-   CLEAR SESSIONS
+   CLEAR SESSION
 ========================================================= */
 
 function clearSessions() {
-
-    /*
-     * Session utama
-     */
 
     localStorage.removeItem(
         "novelReaderSession"
@@ -980,10 +2210,6 @@ function clearSessions() {
         "novelReaderSession"
     );
 
-
-    /*
-     * Session kompatibilitas
-     */
 
     localStorage.removeItem(
         "novelReaderData"
@@ -1035,9 +2261,7 @@ function hideLoading() {
    ERROR
 ========================================================= */
 
-function showError(
-    message
-) {
+function showError(message) {
 
     if (loading) {
 
@@ -1087,3 +2311,36 @@ function hideError() {
     }
 
 }
+
+
+/* =========================================================
+   RESIZE
+========================================================= */
+
+window.addEventListener(
+    "resize",
+    function() {
+
+        detectCurrentPage();
+
+    },
+    {
+        passive: true
+    }
+);
+
+
+/* =========================================================
+   INITIAL YOUTUBE API
+========================================================= */
+
+loadYouTubeAPI();
+
+
+/* =========================================================
+   INITIAL DISPLAY
+========================================================= */
+
+updateSoundtrackDisplay();
+
+updateZoomDisplay();
